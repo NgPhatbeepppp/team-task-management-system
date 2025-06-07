@@ -1,0 +1,24 @@
+## Ignore build output and user-specific files.vs/
+.vs/
+bin/
+obj/
+.vscode/
+*.user
+*.suo
+
+## Ignore EF Core migration snapshots
+Migrations/*Snapshot.cs
+
+## Ignore sensitive config
+appsettings.*.json
+
+## Ignore build artifacts
+*.log
+*.db
+*.sqlite
+*.mdf
+*.ldf
+
+## Ignore Rider / VSCode / JetBrains
+.idea/
+*.code-workspace
