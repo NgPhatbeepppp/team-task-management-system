@@ -13,5 +13,7 @@ namespace TeamTaskManagementSystem.Entities
         public string Description { get; set; }
 
         public ICollection<Project> Projects { get; set; }
+        public ICollection<TeamMember> Members { get; set; }
+
     }
 }

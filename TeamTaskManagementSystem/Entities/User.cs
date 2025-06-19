@@ -17,5 +17,7 @@ namespace TeamTaskManagementSystem.Entities
 
         public ICollection<Comment> Comments { get; set; }
         public ICollection<Notification> Notifications { get; set; }
+        public ICollection<TeamMember> Teams { get; set; }
+
     }
 }
