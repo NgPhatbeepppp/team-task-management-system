@@ -43,5 +43,20 @@ namespace TeamTaskManagementSystem.Repositories
         {
             return await _context.SaveChangesAsync() > 0;
         }
+
+        public async Task<bool> IsUsernameOrEmailTakenAsync(string username, string email)
+        {
+            return await _context.Users.AnyAsync(u => u.Username == username || u.Email == email);
+        }
+
+        public async Task AddUserAsync(User user)
+        {
+            await _context.Users.AddAsync(user);
+        }
+
+        public async Task AddUserProfileAsync(UserProfile profile)
+        {
+            await _context.UserProfiles.AddAsync(profile);
+        }
     }
 }

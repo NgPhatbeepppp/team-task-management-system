@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace TeamTaskManagementSystem.Entities
 {
@@ -6,15 +6,23 @@ namespace TeamTaskManagementSystem.Entities
     {
         public int Id { get; set; }
 
+        [Required]
         [MaxLength(100)]
         public string Name { get; set; }
 
         [MaxLength(500)]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
-        public int TeamId { get; set; }
-        public Team Team { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public ICollection<TaskItem> Tasks { get; set; }
+        // Khóa ngoại (Foreign Key)
+        public int CreatedByUserId { get; set; }
+        public virtual User CreatedByUser { get; set; }
+
+        // --- BỔ SUNG CÁC THUỘC TÍNH ĐIỀU HƯỚNG ---
+        public virtual ICollection<ProjectTeam> Teams { get; set; } = new List<ProjectTeam>();
+        public virtual ICollection<ProjectMember> Members { get; set; } = new List<ProjectMember>();
+        public virtual ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
+        public virtual ICollection<ProjectStatus> Statuses { get; set; } = new List<ProjectStatus>();
     }
 }

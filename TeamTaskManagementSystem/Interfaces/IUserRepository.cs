@@ -1,4 +1,5 @@
-﻿using TeamTaskManagementSystem.Entities;
+﻿using System.Threading.Tasks;
+using TeamTaskManagementSystem.Entities;
 
 namespace TeamTaskManagementSystem.Interfaces
 {
@@ -10,5 +11,10 @@ namespace TeamTaskManagementSystem.Interfaces
         void Update(User user);
         void Delete(User user);
         Task<bool> SaveChangesAsync();
+
+        // Mở rộng cho xác thực
+        Task<bool> IsUsernameOrEmailTakenAsync(string username, string email);
+        Task AddUserAsync(User user);
+        Task AddUserProfileAsync(UserProfile profile);
     }
 }

@@ -1,23 +1,32 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Xml.Linq;
 
 namespace TeamTaskManagementSystem.Entities
 {
     public class User
     {
         public int Id { get; set; }
+
+        [Required]
         [MaxLength(50)]
         public string Username { get; set; }
-        [MaxLength(255)]
+
+        [Required]
         public string PasswordHash { get; set; }
+
+        [Required]
         [MaxLength(255)]
         public string Email { get; set; }
-        [MaxLength(20)]
-        public string Role { get; set; }
 
-        public ICollection<Comment> Comments { get; set; }
-        public ICollection<Notification> Notifications { get; set; }
-        public ICollection<TeamMember> Teams { get; set; }
+        public string Role { get; set; } = "User";
 
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public bool IsActive { get; set; } = true;
+
+        // --- BỔ SUNG CÁC THUỘC TÍNH ĐIỀU HƯỚNG ---
+        public virtual UserProfile UserProfile { get; set; } // Quan hệ 1-1 (One-to-One relationship)
+        public virtual ICollection<TeamMember> Teams { get; set; } = new List<TeamMember>();
+        public virtual ICollection<ProjectMember> Projects { get; set; } = new List<ProjectMember>();
+        public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
     }
 }

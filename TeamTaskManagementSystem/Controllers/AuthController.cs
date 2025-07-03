@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿// Controllers/AuthController.cs
+using Microsoft.AspNetCore.Mvc;
+using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.ViewModels;
+using TeamTaskManagementSystem.Entities;
+using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text;
-using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Data;
-using Microsoft.AspNetCore.Identity.Data;
 
 namespace TeamTaskManagementSystem.Controllers
 {
@@ -13,22 +15,46 @@ namespace TeamTaskManagementSystem.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IAuthService _authService;
+        private readonly IUserRepository _userRepository;
         private readonly IConfiguration _config;
+        private readonly IPasswordHasher<User> _hasher;
 
-        public AuthController(AppDbContext context, IConfiguration config)
+        public AuthController(IAuthService authService, IUserRepository userRepository, IConfiguration config)
         {
-            _context = context;
+            _authService = authService;
+            _userRepository = userRepository;
             _config = config;
+            _hasher = new PasswordHasher<User>();
+        }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] AuthRegisterRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var token = await _authService.RegisterAsync(request);
+
+            if (token == null)
+                return BadRequest("Username hoặc Email đã được sử dụng.");
+
+            return Ok(new { token });
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] AuthLoginRequest request)
         {
-            var user = _context.Users.FirstOrDefault(u => u.Username == request.Username);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            if (user == null || user.PasswordHash != request.Password)
-                return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng.");
+            var user = (await _userRepository.GetAllAsync()).FirstOrDefault(u => u.Username == request.Username);
+
+            if (user == null || _hasher.VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
+                return Unauthorized("Sai tài khoản hoặc mật khẩu.");
+
+            if (!user.IsActive)
+                return Unauthorized("Tài khoản đã bị khóa.");
 
             var token = GenerateJwtToken(user);
             return Ok(new { token });
@@ -41,55 +67,18 @@ namespace TeamTaskManagementSystem.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role),
+                new Claim(ClaimTypes.Email, user.Email)
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(3),
-                signingCredentials: creds
-            );
+                expires: DateTime.UtcNow.AddDays(7),
+                signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
-        {
-            // Kiểm tra trùng tên đăng nhập
-            if (_context.Users.Any(u => u.Username == request.Username))
-                return BadRequest("Tên đăng nhập đã tồn tại.");
-
-            var user = new User
-            {
-                Username = request.Username,
-                PasswordHash = request.Password,
-                Email = request.Email,
-                Role = request.Role ?? "Member"
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Đăng ký thành công", user.Id });
-        }
-
     }
-
-    public class LoginRequest
-    {
-        public string Username { get; set; }
-        public string Password { get; set; }
-    }
-    public class RegisterRequest
-    {
-        public string Username { get; set; }
-        public string Password { get; set; }
-        public string Email { get; set; }
-        public string? Role { get; set; } // Optional: "Admin", "Member", v.v.
-    }
-
 }

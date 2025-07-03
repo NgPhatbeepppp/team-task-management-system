@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Xml.Linq;
 using TeamTaskManagementSystem.Entities;
 
 namespace TeamTaskManagementSystem.Data
@@ -9,103 +7,114 @@ namespace TeamTaskManagementSystem.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+        #region DbSets
+        // --- CORE TABLES ---
         public DbSet<User> Users { get; set; }
+        public DbSet<UserProfile> UserProfiles { get; set; }
         public DbSet<Team> Teams { get; set; }
         public DbSet<Project> Projects { get; set; }
+
+        // --- TASK MANAGEMENT TABLES ---
         public DbSet<TaskItem> Tasks { get; set; }
+        public DbSet<ProjectStatus> ProjectStatuses { get; set; }
+        public DbSet<ChecklistItem> ChecklistItems { get; set; }
+
+        // --- RELATIONSHIP & COLLABORATION TABLES ---
+        public DbSet<TeamMember> TeamMembers { get; set; }
+        public DbSet<ProjectMember> ProjectMembers { get; set; }
+        public DbSet<ProjectTeam> ProjectTeams { get; set; }
+        public DbSet<ProjectInvitation> ProjectInvitations { get; set; }
         public DbSet<Comment> Comments { get; set; }
         public DbSet<Notification> Notifications { get; set; }
-        public DbSet<ProjectMember> ProjectMembers { get; set; }
-        public DbSet<ProjectInvitation> ProjectInvitations { get; set; }
-        public DbSet<ProjectTeam> ProjectTeams { get; set; }
-        public DbSet<TaskItem> TaskItems { get; set; }
-        public DbSet<TeamMember> TeamMembers { get; set; }
-       
-
-
+        public DbSet<ActivityLog> ActivityLogs { get; set; }
+        #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            #region Composite Keys for Many-to-Many relationships
+            modelBuilder.Entity<TeamMember>().HasKey(tm => new { tm.TeamId, tm.UserId });
+            modelBuilder.Entity<ProjectMember>().HasKey(pm => new { pm.ProjectId, pm.UserId });
+            modelBuilder.Entity<ProjectTeam>().HasKey(pt => new { pt.ProjectId, pt.TeamId });
+            #endregion
+
+            #region Relationship Configurations
+            // User <-> UserProfile (One-to-One)
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.UserProfile)
+                .WithOne(p => p.User)
+                .HasForeignKey<UserProfile>(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade); // Xóa User thì xóa luôn Profile
+
+            // Team <-> User (Many-to-Many)
+            modelBuilder.Entity<TeamMember>()
+                .HasOne(tm => tm.Team).WithMany(t => t.Members).HasForeignKey(tm => tm.TeamId);
+            modelBuilder.Entity<TeamMember>()
+                .HasOne(tm => tm.User).WithMany(u => u.Teams).HasForeignKey(tm => tm.UserId);
+
+            // Project <-> User (Many-to-Many)
+            modelBuilder.Entity<ProjectMember>()
+                .HasOne(pm => pm.Project).WithMany(p => p.Members).HasForeignKey(pm => pm.ProjectId);
+            modelBuilder.Entity<ProjectMember>()
+                .HasOne(pm => pm.User).WithMany(u => u.Projects).HasForeignKey(pm => pm.UserId);
+
+            // Project <-> Team (Many-to-Many)
+            modelBuilder.Entity<ProjectTeam>()
+                .HasOne(pt => pt.Project).WithMany(p => p.Teams).HasForeignKey(pt => pt.ProjectId);
+            modelBuilder.Entity<ProjectTeam>()
+                .HasOne(pt => pt.Team).WithMany(t => t.Projects).HasForeignKey(pt => pt.TeamId);
+            #endregion
+
+            #region ON DELETE Behavior Rules (QUAN TRỌNG)
+            // === QUY TẮC PHÁ VỠ CHUỖI DOMINO (BREAKING THE CYCLE) ===
+
+            // 1. Cấm xóa User nếu họ vẫn là người tạo ra các thực thể quan trọng khác.
+            modelBuilder.Entity<Project>()
+                .HasOne(p => p.CreatedByUser).WithMany().HasForeignKey(p => p.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Team>()
+                .HasOne(t => t.CreatedByUser).WithMany().HasForeignKey(t => t.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<TaskItem>()
-                .HasOne(t => t.User)
+                .HasOne(t => t.CreatedByUser).WithMany().HasForeignKey(t => t.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+
+            // 2. Cấm xóa Project nếu nó vẫn còn chứa các Statuses.
+            //    Điều này phá vỡ vòng lặp: Project -> Statuses -> Tasks <- Project
+            modelBuilder.Entity<ProjectStatus>()
+                .HasOne(ps => ps.Project)
+                .WithMany(p => p.Statuses)
+                .HasForeignKey(ps => ps.ProjectId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // === CÁC QUY TẮC XÓA AN TOÀN KHÁC ===
+
+            // 3. Nếu xóa User, các Task được gán cho họ sẽ trở thành "chưa được gán".
+            modelBuilder.Entity<TaskItem>()
+                .HasOne(t => t.AssignedTo)
                 .WithMany()
-                .HasForeignKey(t => t.AssignedTo)
+                .HasForeignKey(t => t.AssignedToUserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // 4. Nếu xóa Status, các Task đang dùng nó sẽ trở thành "không có status".
+            modelBuilder.Entity<TaskItem>()
+                .HasOne(t => t.Status)
+                .WithMany(ps => ps.Tasks)
+                .HasForeignKey(t => t.StatusId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // 5. Cấm xóa Task cha nếu nó vẫn còn Task con.
+            modelBuilder.Entity<TaskItem>()
+                .HasMany(t => t.Subtasks)
+                .WithOne(t => t.ParentTask)
+                .HasForeignKey(t => t.ParentTaskId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // 6. Xóa Task hoặc User sẽ xóa các Comment liên quan.
             modelBuilder.Entity<Comment>()
-                .HasOne(c => c.User)
-                .WithMany(u => u.Comments)
-                .HasForeignKey(c => c.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
+                .HasOne(c => c.Task).WithMany(t => t.Comments).HasForeignKey(c => c.TaskId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Comment>()
-                .HasOne(c => c.Task)
-                .WithMany(t => t.Comments)
-                .HasForeignKey(c => c.TaskId)
-                .OnDelete(DeleteBehavior.Cascade);
-            
-            modelBuilder.Entity<TeamMember>()
-           .HasKey(tm => new { tm.TeamId, tm.UserId });
+                .HasOne(c => c.User).WithMany(u => u.Comments).HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<TeamMember>()
-                .HasOne(tm => tm.Team)
-                .WithMany(t => t.Members)
-                .HasForeignKey(tm => tm.TeamId);
-
-            modelBuilder.Entity<TeamMember>()
-                .HasOne(tm => tm.User)
-                .WithMany(u => u.Teams)
-                .HasForeignKey(tm => tm.UserId);
-            // ProjectMember
-            modelBuilder.Entity<ProjectMember>()
-                .HasKey(pm => new { pm.ProjectId, pm.UserId });
-
-            modelBuilder.Entity<ProjectMember>()
-                .HasOne(pm => pm.Project)
-                .WithMany()
-                .HasForeignKey(pm => pm.ProjectId);
-
-            modelBuilder.Entity<ProjectMember>()
-                .HasOne(pm => pm.User)
-                .WithMany()
-                .HasForeignKey(pm => pm.UserId);
-
-            // ProjectTeam
-            modelBuilder.Entity<ProjectTeam>()
-            .HasKey(pt => new { pt.ProjectId, pt.TeamId });
-
-            modelBuilder.Entity<ProjectTeam>()
-                .HasOne(pt => pt.Project)
-                .WithMany()
-                .HasForeignKey(pt => pt.ProjectId)
-                .OnDelete(DeleteBehavior.Restrict); 
-
-            modelBuilder.Entity<ProjectTeam>()
-                .HasOne(pt => pt.Team)
-                .WithMany()
-                .HasForeignKey(pt => pt.TeamId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-
-            // ProjectInvitation: cấu hình FK là optional
-            modelBuilder.Entity<ProjectInvitation>()
-                .HasOne(i => i.Project)
-                .WithMany()
-                .HasForeignKey(i => i.ProjectId);
-
-            modelBuilder.Entity<ProjectInvitation>()
-                .HasOne(i => i.Team)
-                .WithMany()
-                .HasForeignKey(i => i.TeamId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<ProjectInvitation>()
-                .HasOne(i => i.User)
-                .WithMany()
-                .HasForeignKey(i => i.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
+            #endregion
         }
-
     }
-
 }
