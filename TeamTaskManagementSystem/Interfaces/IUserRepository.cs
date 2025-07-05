@@ -16,5 +16,7 @@ namespace TeamTaskManagementSystem.Interfaces
         Task<bool> IsUsernameOrEmailTakenAsync(string username, string email);
         Task AddUserAsync(User user);
         Task AddUserProfileAsync(UserProfile profile);
+        // Quản lý hồ sơ
+        Task<UserProfile?> GetUserProfileByUserIdAsync(int userId);
     }
 }

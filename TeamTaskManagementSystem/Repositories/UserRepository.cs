@@ -58,5 +58,10 @@ namespace TeamTaskManagementSystem.Repositories
         {
             await _context.UserProfiles.AddAsync(profile);
         }
+
+        public async Task<UserProfile?> GetUserProfileByUserIdAsync(int userId)
+        {
+            return await _context.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        }
     }
 }

@@ -7,25 +7,19 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
+// ===================================================================
+// (Đăng ký tất cả services)
+// ===================================================================
 var builder = WebApplication.CreateBuilder(args);
 
-// Database
+// 1. Thêm dịch vụ CORS
+builder.Services.AddCors();
+
+// 2. Thêm Database Context
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// CORS cho React
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.WithOrigins("http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
-
-// JWT Authentication
+// 3. Thêm JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -42,7 +36,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Repositories + Services
+// 4. Thêm Repositories và Services (Dependency Injection)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITeamRepository, TeamRepository>();
@@ -52,24 +46,51 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
+// 5. Thêm các services cần thiết cho Controller và Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+// ===================================================================
+// XÂY DỰNG (Tạo ứng dụng)
+// ===================================================================
 var app = builder.Build();
 
+
+// ===================================================================
+// (Middleware Pipeline)
+// ===================================================================
+
+// Cấu hình đặc biệt cho môi trường DEVELOPMENT
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // Chính sách CORS "dễ dãi" cho môi trường dev
+    app.UseCors(policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+}
+else
+{
+    // Cấu hình cho môi trường PRODUCTION
+    // app.UseCors(policy => policy.WithOrigins("https://your-frontend.com"));
+    app.UseHsts();
 }
 
+// Chuyển hướng sang HTTPS
 app.UseHttpsRedirection();
 
-app.UseCors();
-app.UseAuthentication();
-app.UseAuthorization();
+// Kích hoạt các lớp phòng thủ theo đúng thứ tự
 
+app.UseAuthentication(); // Lính gác An Ninh
+app.UseAuthorization();  // Lính gác Nội Vụ
+
+// Ánh xạ các request đến đúng Controller
 app.MapControllers();
 
+// Chạy ứng dụng
 app.Run();
