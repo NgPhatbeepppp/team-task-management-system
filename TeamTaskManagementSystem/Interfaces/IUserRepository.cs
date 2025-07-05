@@ -11,6 +11,9 @@ namespace TeamTaskManagementSystem.Interfaces
         void Update(User user);
         void Delete(User user);
         Task<bool> SaveChangesAsync();
+        Task<bool> IsUsernameTakenAsync(string username);
+        Task<bool> IsEmailTakenAsync(string email);
+        Task<bool> IsPhoneNumberTakenAsync(string phoneNumber); // nếu cần
 
         // Mở rộng cho xác thực
         Task<bool> IsUsernameOrEmailTakenAsync(string username, string email);

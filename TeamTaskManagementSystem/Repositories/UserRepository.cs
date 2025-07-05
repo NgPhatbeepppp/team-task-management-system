@@ -13,6 +13,20 @@ namespace TeamTaskManagementSystem.Repositories
         {
             _context = context;
         }
+        public async Task<bool> IsUsernameTakenAsync(string username)
+        {
+            return await _context.Users.AnyAsync(u => u.Username == username);
+        }
+
+        public async Task<bool> IsEmailTakenAsync(string email)
+        {
+            return await _context.Users.AnyAsync(u => u.Email == email);
+        }
+
+        public async Task<bool> IsPhoneNumberTakenAsync(string phoneNumber)
+        {
+            return await _context.UserProfiles.AnyAsync(p => p.PhoneNumber == phoneNumber);
+        }
 
         public async Task<IEnumerable<User>> GetAllAsync()
         {

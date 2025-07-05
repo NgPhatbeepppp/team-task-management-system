@@ -1,10 +1,9 @@
-﻿using System.Threading.Tasks;
-using TeamTaskManagementSystem.ViewModels;
+﻿using TeamTaskManagementSystem.ViewModels;
 
 namespace TeamTaskManagementSystem.Interfaces
 {
     public interface IAuthService
     {
-        Task<string?> RegisterAsync(AuthRegisterRequest request);
+        Task<RegisterResult> RegisterAsync(AuthRegisterRequest request);
     }
 }
