@@ -8,6 +8,7 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Linq;
 
 namespace TeamTaskManagementSystem.Controllers
 {
@@ -34,13 +35,15 @@ namespace TeamTaskManagementSystem.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var token = await _authService.RegisterAsync(request);
+            var result = await _authService.RegisterAsync(request);
 
-            if (token == null)
-                return BadRequest("Username hoặc Email đã được sử dụng.");
+            if (!result.Success)
+                return BadRequest(new { message = result.ErrorMessage });
 
-            return Ok(new { token });
+            return Ok(new { token = result.Token });
+
         }
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] AuthLoginRequest request)

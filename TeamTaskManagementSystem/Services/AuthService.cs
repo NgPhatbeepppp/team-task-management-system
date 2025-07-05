@@ -22,10 +22,13 @@ namespace TeamTaskManagementSystem.Services
             _hasher = new PasswordHasher<User>();
         }
 
-        public async Task<string?> RegisterAsync(AuthRegisterRequest request)
+        public async Task<RegisterResult> RegisterAsync(AuthRegisterRequest request)
         {
-            if (await _userRepository.IsUsernameOrEmailTakenAsync(request.Username, request.Email))
-                return null;
+            if (await _userRepository.IsUsernameTakenAsync(request.Username))
+                return RegisterResult.Fail("Tên đăng nhập đã được sử dụng.");
+
+            if (await _userRepository.IsEmailTakenAsync(request.Email))
+                return RegisterResult.Fail("Email đã được sử dụng.");
 
             var user = new User
             {
@@ -55,8 +58,9 @@ namespace TeamTaskManagementSystem.Services
                 await _userRepository.SaveChangesAsync();
             }
 
-            return GenerateJwtToken(user);
+            return RegisterResult.Ok(GenerateJwtToken(user));
         }
+
 
         private string GenerateJwtToken(User user)
         {
