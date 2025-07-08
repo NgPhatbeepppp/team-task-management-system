@@ -40,7 +40,7 @@ namespace TeamTaskManagementSystem.Controllers
         {
             if (id != project.Id) return BadRequest("Id không khớp.");
             var success = await _service.UpdateProjectAsync(project, GetUserId());
-            if (!success) return Forbid("Bạn không có quyền sửa project.");
+            if (!success) return StatusCode(403, "Bạn không có quyền sửa project.");
             return NoContent();
         }
 

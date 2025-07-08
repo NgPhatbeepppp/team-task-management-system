@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace TeamTaskManagementSystem.Entities
 {
@@ -17,9 +18,11 @@ namespace TeamTaskManagementSystem.Entities
 
         // Khóa ngoại (Foreign Key)
         public int ProjectId { get; set; }
+        [JsonIgnore]
         public virtual Project Project { get; set; }
 
         // Thuộc tính điều hướng (Navigation Property)
+        [JsonIgnore]
         public virtual ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
     }
 }
