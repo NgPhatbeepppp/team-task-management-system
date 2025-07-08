@@ -24,26 +24,46 @@ namespace TeamTaskManagementSystem.Services
 
         public async Task<bool> CreateProjectAsync(Project project, int creatorUserId)
         {
+            // ⚠️ GÁN khóa ngoại bắt buộc
+            project.CreatedByUserId = creatorUserId;
+            project.CreatedAt = DateTime.UtcNow;
+
             var projectMember = new ProjectMember
             {
                 UserId = creatorUserId,
                 Project = project,
                 RoleInProject = "ProjectLeader"
             };
+            project.Members.Add(projectMember);
 
+            project.Statuses = new List<ProjectStatus>
+            {
+                new ProjectStatus { Name = "To Do", Color = "#007bff", Order = 0 },
+                new ProjectStatus { Name = "In Progress", Color = "#ffc107", Order = 1 },
+                new ProjectStatus { Name = "Done", Color = "#28a745", Order = 2 }
+            };
             await _repo.AddAsync(project);
-            await _repo.SaveChangesAsync(); // Đảm bảo project có Id
+            await _repo.SaveChangesAsync();
+
             return true;
         }
+
 
         public async Task<bool> UpdateProjectAsync(Project project, int userId)
         {
             var isLeader = await _repo.IsUserProjectLeaderAsync(project.Id, userId);
             if (!isLeader) return false;
 
-            _repo.Update(project);
+            var existing = await _repo.GetByIdAsync(project.Id);
+            if (existing == null) return false;
+
+            // Chỉ update những trường được phép
+            existing.Name = project.Name;
+            existing.Description = project.Description;
+
             return await _repo.SaveChangesAsync();
         }
+
 
         public async Task<bool> DeleteProjectAsync(int id, int userId)
         {

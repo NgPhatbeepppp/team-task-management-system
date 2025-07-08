@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace TeamTaskManagementSystem.Entities
 {
@@ -12,10 +14,14 @@ namespace TeamTaskManagementSystem.Entities
 
         public bool IsCompleted { get; set; } = false;
 
-        public int Order { get; set; }
+        public int Order { get; set; } // thêm vào
 
-        // Khóa ngoại (Foreign Key)
+        // FK đến Task
+
         public int TaskId { get; set; }
+
+        [JsonIgnore]
+        [ValidateNever]
         public virtual TaskItem Task { get; set; }
     }
 }

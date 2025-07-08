@@ -1,8 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace TeamTaskManagementSystem.Entities
 {
-    public class TaskItem // Giữ tên là TaskItem như file của bạn
+    public class TaskItem
     {
         public int Id { get; set; }
 
@@ -16,27 +17,37 @@ namespace TeamTaskManagementSystem.Entities
 
         public DateTime? Deadline { get; set; }
 
+        [Required]
         [MaxLength(20)]
         public string Priority { get; set; } = "Medium";
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // --- CẬP NHẬT CÁC KHÓA NGOẠI ---
+        // --- Khóa ngoại ---
+        [Required]
         public int ProjectId { get; set; }
+
         public int? AssignedToUserId { get; set; }
         public int? StatusId { get; set; }
         public int? ParentTaskId { get; set; }
         public int CreatedByUserId { get; set; }
 
-        // --- BỔ SUNG CÁC THUỘC TÍNH ĐIỀU HƯỚNG ---
-        public virtual Project Project { get; set; }
+        // --- Thuộc tính điều hướng ---
+        [JsonIgnore]
+        public virtual Project? Project { get; set; }
+        [JsonIgnore]
         public virtual User? AssignedTo { get; set; }
+        [JsonIgnore]
         public virtual ProjectStatus? Status { get; set; }
-        public virtual User CreatedByUser { get; set; }
-
+        [JsonIgnore]
+        public virtual User? CreatedByUser { get; set; }
+        [JsonIgnore]
         public virtual TaskItem? ParentTask { get; set; }
+        [JsonIgnore]
         public virtual ICollection<TaskItem> Subtasks { get; set; } = new List<TaskItem>();
+        [JsonIgnore]
         public virtual ICollection<ChecklistItem> ChecklistItems { get; set; } = new List<ChecklistItem>();
+        [JsonIgnore]
         public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
     }
 }
