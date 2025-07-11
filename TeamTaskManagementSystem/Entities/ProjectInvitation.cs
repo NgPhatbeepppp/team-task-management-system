@@ -1,4 +1,3 @@
-
 using System;
 
 namespace TeamTaskManagementSystem.Entities
@@ -10,13 +9,16 @@ namespace TeamTaskManagementSystem.Entities
         public int ProjectId { get; set; }
         public Project Project { get; set; }
 
-        public int? TeamId { get; set; }
-        public Team? Team { get; set; }
+        public int? InvitedUserId { get; set; }
+        public User? InvitedUser { get; set; }
 
-        public int? UserId { get; set; }
-        public User? User { get; set; }
+        public int? InvitedTeamId { get; set; }
+        public Team? InvitedTeam { get; set; }
 
-        public string Status { get; set; } // "Pending", "Accepted", "Rejected"
-        public DateTime SentAt { get; set; }
+        public int InvitedByUserId { get; set; }
+        public User InvitedByUser { get; set; }
+
+        public string Status { get; set; } = "Pending";
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

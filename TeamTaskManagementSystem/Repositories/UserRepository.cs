@@ -13,7 +13,11 @@ namespace TeamTaskManagementSystem.Repositories
         {
             _context = context;
         }
-
+        public async Task<User?> GetUserByEmailOrUsernameAsync(string identifier)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == identifier || u.Username == identifier);
+        }
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _context.Users.ToListAsync();
