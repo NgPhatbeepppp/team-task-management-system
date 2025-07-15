@@ -7,7 +7,7 @@ namespace TeamTaskManagementSystem.Entities
         public int Id { get; set; }
 
         public int ProjectId { get; set; }
-        public Project Project { get; set; }
+        public virtual Project? Project { get; set; }
 
         public int? InvitedUserId { get; set; }
         public User? InvitedUser { get; set; }
@@ -16,7 +16,7 @@ namespace TeamTaskManagementSystem.Entities
         public Team? InvitedTeam { get; set; }
 
         public int InvitedByUserId { get; set; }
-        public User InvitedByUser { get; set; }
+        public virtual User? InvitedByUser { get; set; }
 
         public string Status { get; set; } = "Pending";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

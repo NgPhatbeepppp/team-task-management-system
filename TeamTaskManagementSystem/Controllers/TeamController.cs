@@ -53,16 +53,16 @@ namespace TeamTaskManagementSystem.Controllers
             return NoContent();
         }
 
-        [HttpPost("{teamId}/members")]
-        public async Task<IActionResult> AddMember(int teamId, [FromBody] int userId)
-        {
-            if (!await _teamService.IsTeamLeaderAsync(teamId, GetUserId()))
-                return Forbid("Bạn không phải TeamLeader của team này.");
+        //[HttpPost("{teamId}/members")]
+        //public async Task<IActionResult> AddMember(int teamId, [FromBody] int userId)
+        //{
+        //    if (!await _teamService.IsTeamLeaderAsync(teamId, GetUserId()))
+        //        return Forbid("Bạn không phải TeamLeader của team này.");
 
-            var success = await _teamService.AddMemberAsync(teamId, userId);
-            if (!success) return BadRequest("Không thể thêm thành viên.");
-            return Ok("Đã thêm thành viên.");
-        }
+        //    var success = await _teamService.AddMemberAsync(teamId, userId);
+        //    if (!success) return BadRequest("Không thể thêm thành viên.");
+        //    return Ok("Đã thêm thành viên.");
+        //}
 
         [HttpDelete("{teamId}/members/{userId}")]
         public async Task<IActionResult> RemoveMember(int teamId, int userId)

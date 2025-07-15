@@ -28,7 +28,8 @@ namespace TeamTaskManagementSystem.Repositories
                 await _context.ProjectMembers.AddAsync(new ProjectMember
                 {
                     ProjectId = projectId,
-                    UserId = userId
+                    UserId = userId,
+                    RoleInProject = "Contributor"
                 });
             }
         }

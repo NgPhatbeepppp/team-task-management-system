@@ -21,7 +21,6 @@ namespace TeamTaskManagementSystem.Entities
         public int TaskId { get; set; }
 
         [JsonIgnore]
-        [ValidateNever]
-        public virtual TaskItem Task { get; set; }
+         public virtual TaskItem? Task { get; set; }
     }
 }

@@ -6,10 +6,10 @@ namespace TeamTaskManagementSystem.Entities
     {
         public int ProjectId { get; set; }
         [JsonIgnore]
-        public Project Project { get; set; }
+        public Project? Project { get; set; }
 
         public int TeamId { get; set; }
         [JsonIgnore]
-        public Team Team { get; set; }
+        public Team? Team { get; set; }
     }
 }

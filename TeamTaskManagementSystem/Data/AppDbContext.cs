@@ -27,6 +27,7 @@ namespace TeamTaskManagementSystem.Data
         public DbSet<Comment> Comments { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<ActivityLog> ActivityLogs { get; set; }
+        public DbSet<TeamInvitation> TeamInvitations { get; set; }
         #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -113,7 +114,18 @@ namespace TeamTaskManagementSystem.Data
                 .HasOne(c => c.Task).WithMany(t => t.Comments).HasForeignKey(c => c.TaskId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Comment>()
                 .HasOne(c => c.User).WithMany(u => u.Comments).HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
+            // Thêm đoạn này vào trong hàm OnModelCreating
+            modelBuilder.Entity<TeamInvitation>()
+                .HasOne(ti => ti.InvitedUser)
+                .WithMany()
+                .HasForeignKey(ti => ti.InvitedUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<TeamInvitation>()
+                .HasOne(ti => ti.InvitedByUser)
+                .WithMany()
+                .HasForeignKey(ti => ti.InvitedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
             #endregion
         }
     }

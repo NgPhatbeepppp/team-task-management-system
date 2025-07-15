@@ -58,6 +58,8 @@ builder.Services.AddScoped<IProjectInvitationService, ProjectInvitationService>(
 
 // --- Invitation handling ---
 builder.Services.AddScoped<IInvitationService, InvitationService>();
+builder.Services.AddScoped<ITeamInvitationRepository, TeamInvitationRepository>();
+builder.Services.AddScoped<ITeamInvitationService, TeamInvitationService>();
 
 // --- Task ---
 builder.Services.AddScoped<ITaskService, TaskService>();

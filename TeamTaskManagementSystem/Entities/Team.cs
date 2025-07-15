@@ -18,7 +18,7 @@ namespace TeamTaskManagementSystem.Entities
         // Foreign Key
         public int CreatedByUserId { get; set; }
         [JsonIgnore]        
-        public virtual User CreatedByUser { get; set; }
+        public virtual User? CreatedByUser { get; set; }
 
         // --- SỬA LỖI Ở ĐÂY ---
         // Một nhóm có nhiều thành viên
