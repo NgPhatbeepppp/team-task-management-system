@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
+using System.Text.Json.Serialization;
 namespace TeamTaskManagementSystem.Entities
 {
     public class Team
@@ -17,13 +17,16 @@ namespace TeamTaskManagementSystem.Entities
 
         // Foreign Key
         public int CreatedByUserId { get; set; }
+        [JsonIgnore]        
         public virtual User CreatedByUser { get; set; }
 
         // --- SỬA LỖI Ở ĐÂY ---
         // Một nhóm có nhiều thành viên
+        [JsonIgnore]
         public virtual ICollection<TeamMember> Members { get; set; } = new List<TeamMember>();
 
         // Một nhóm tham gia nhiều dự án thông qua bảng nối ProjectTeam
+        [JsonIgnore]
         public virtual ICollection<ProjectTeam> Projects { get; set; } = new List<ProjectTeam>();
     }
 }

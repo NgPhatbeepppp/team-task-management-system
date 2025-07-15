@@ -15,6 +15,7 @@ namespace TeamTaskManagementSystem.Repositories
         }
         public async Task<bool> CreateTeamAsync(Team team, int creatorUserId)
         {
+            team.CreatedByUserId = creatorUserId;
             await _context.Teams.AddAsync(team);
 
             _context.TeamMembers.Add(new TeamMember
