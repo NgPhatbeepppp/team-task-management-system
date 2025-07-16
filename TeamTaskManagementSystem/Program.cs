@@ -39,18 +39,37 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // 4. Thêm Repositories và Services (Dependency Injection)
+// --- User ---
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+
+// --- Team ---
 builder.Services.AddScoped<ITeamRepository, TeamRepository>();
 builder.Services.AddScoped<ITeamService, TeamService>();
+builder.Services.AddScoped<ITeamMemberRepository, TeamMemberRepository>();
+
+// --- Project ---
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
+builder.Services.AddScoped<IProjectTeamRepository, ProjectTeamRepository>();
+builder.Services.AddScoped<IProjectInvitationRepository, ProjectInvitationRepository>();
+builder.Services.AddScoped<IProjectInvitationService, ProjectInvitationService>();
+
+// --- Invitation handling ---
+builder.Services.AddScoped<IInvitationService, InvitationService>();
+builder.Services.AddScoped<ITeamInvitationRepository, TeamInvitationRepository>();
+builder.Services.AddScoped<ITeamInvitationService, TeamInvitationService>();
+
+// --- Task ---
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IChecklistItemService, ChecklistItemService>();
 builder.Services.AddScoped<IChecklistItemRepository, ChecklistItemRepository>();
+
+// --- Auth ---
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // 5. Thêm các services cần thiết cho Controller và Swagger
 builder.Services.AddControllers().AddJsonOptions(x =>
@@ -60,7 +79,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "TeamTask API", Version = "v1" });
 
-    // ⚠️ Thêm đoạn này để hỗ trợ Bearer Token
+    // đoạn này để hỗ trợ Bearer Token
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -101,7 +120,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // Chính sách CORS "dễ dãi" cho môi trường dev
+    // Chính sách CORS cho môi trường dev
     app.UseCors(policy =>
         policy.AllowAnyOrigin()
               .AllowAnyHeader()

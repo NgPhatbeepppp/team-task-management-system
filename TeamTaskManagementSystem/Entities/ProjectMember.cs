@@ -6,11 +6,11 @@ namespace TeamTaskManagementSystem.Entities
     {
         public int ProjectId { get; set; }
         [JsonIgnore]
-        public Project Project { get; set; }
+        public Project? Project { get; set; }
 
         public int UserId { get; set; }
         [JsonIgnore]
-        public User User { get; set; }
+        public User? User { get; set; }
 
         public string RoleInProject { get; set; } // "ProjectLeader", "Contributor"
     }

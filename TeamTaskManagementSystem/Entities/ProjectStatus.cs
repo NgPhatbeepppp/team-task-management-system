@@ -19,7 +19,7 @@ namespace TeamTaskManagementSystem.Entities
         // Khóa ngoại (Foreign Key)
         public int ProjectId { get; set; }
         [JsonIgnore]
-        public virtual Project Project { get; set; }
+        public virtual Project? Project { get; set; }
 
         // Thuộc tính điều hướng (Navigation Property)
         [JsonIgnore]
