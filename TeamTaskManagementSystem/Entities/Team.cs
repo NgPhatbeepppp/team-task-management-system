@@ -20,9 +20,9 @@ namespace TeamTaskManagementSystem.Entities
         [JsonIgnore]        
         public virtual User? CreatedByUser { get; set; }
 
-        // --- SỬA LỖI Ở ĐÂY ---
+      
         // Một nhóm có nhiều thành viên
-        [JsonIgnore]
+        
         [JsonPropertyName("teamMembers")]
         public virtual ICollection<TeamMember> Members { get; set; } = new List<TeamMember>();
 

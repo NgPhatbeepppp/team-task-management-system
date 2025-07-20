@@ -1,40 +1,52 @@
 ﻿using TeamTaskManagementSystem.Entities;
+using TeamTaskManagementSystem.Exceptions;
 using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Repositories;
 
 namespace TeamTaskManagementSystem.Services
 {
     public class ProjectService : IProjectService
     {
-        private readonly IProjectRepository _repo;
+       
+        private readonly IProjectRepository _projectRepository;
+        private readonly ITeamRepository _teamRepository;
+        private readonly IProjectTeamRepository _projectTeamRepository;
+        private readonly IProjectMemberRepository _projectMemberRepository;
 
-        public ProjectService(IProjectRepository repo)
+        // 2. Constructor duy nhất, nhận tất cả dependency
+        public ProjectService(
+            IProjectRepository projectRepository,
+            ITeamRepository teamRepository,
+            IProjectTeamRepository projectTeamRepository,
+            IProjectMemberRepository projectMemberRepository)
         {
-            _repo = repo;
+            _projectRepository = projectRepository;
+            _teamRepository = teamRepository;
+            _projectTeamRepository = projectTeamRepository;
+            _projectMemberRepository = projectMemberRepository;
         }
 
         public async Task<IEnumerable<Project>> GetProjectsOfUserAsync(int userId)
         {
-            return await _repo.GetProjectsOfUserAsync(userId);
+            return await _projectRepository.GetProjectsOfUserAsync(userId);
         }
 
         public async Task<Project?> GetByIdAsync(int id)
         {
-            return await _repo.GetByIdAsync(id);
+            return await _projectRepository.GetByIdAsync(id);
         }
 
-        public async Task<bool> CreateProjectAsync(Project project, int creatorUserId)
+        // 3. Chuyển sang dùng void và Exception để xử lý lỗi
+        public async Task CreateProjectAsync(Project project, int creatorUserId)
         {
-            // ⚠️ GÁN khóa ngoại bắt buộc
             project.CreatedByUserId = creatorUserId;
             project.CreatedAt = DateTime.UtcNow;
 
-            var projectMember = new ProjectMember
+            project.Members.Add(new ProjectMember
             {
                 UserId = creatorUserId,
-                Project = project,
                 RoleInProject = "ProjectLeader"
-            };
-            project.Members.Add(projectMember);
+            });
 
             project.Statuses = new List<ProjectStatus>
             {
@@ -42,39 +54,88 @@ namespace TeamTaskManagementSystem.Services
                 new ProjectStatus { Name = "In Progress", Color = "#ffc107", Order = 1 },
                 new ProjectStatus { Name = "Done", Color = "#28a745", Order = 2 }
             };
-            await _repo.AddAsync(project);
-            await _repo.SaveChangesAsync();
 
-            return true;
+            await _projectRepository.AddAsync(project);
+            await _projectRepository.SaveChangesAsync();
         }
 
-
-        public async Task<bool> UpdateProjectAsync(Project project, int userId)
+        // 4. Chuyển sang dùng void và Exception để xử lý lỗi
+        public async Task UpdateProjectAsync(Project project, int userId)
         {
-            var isLeader = await _repo.IsUserProjectLeaderAsync(project.Id, userId);
-            if (!isLeader) return false;
+            var isLeader = await _projectRepository.IsUserProjectLeaderAsync(project.Id, userId);
+            if (!isLeader)
+            {
+                throw new UnauthorizedAccessException("Chỉ có trưởng dự án mới có quyền chỉnh sửa.");
+            }
 
-            var existing = await _repo.GetByIdAsync(project.Id);
-            if (existing == null) return false;
+            var existingProject = await _projectRepository.GetByIdAsync(project.Id);
+            if (existingProject == null)
+            {
+                throw new NotFoundException("Không tìm thấy dự án để cập nhật.");
+            }
 
-            // Chỉ update những trường được phép
-            existing.Name = project.Name;
-            existing.Description = project.Description;
+            existingProject.Name = project.Name;
+            existingProject.Description = project.Description;
 
-            return await _repo.SaveChangesAsync();
+            _projectRepository.Update(existingProject); // Update thực thể đang được theo dõi
+            await _projectRepository.SaveChangesAsync();
         }
 
-
-        public async Task<bool> DeleteProjectAsync(int id, int userId)
+        // 5. Chuyển sang dùng void và Exception để xử lý lỗi
+        public async Task DeleteProjectAsync(int projectId, int userId)
         {
-            var isLeader = await _repo.IsUserProjectLeaderAsync(id, userId);
-            if (!isLeader) return false;
+            var isLeader = await _projectRepository.IsUserProjectLeaderAsync(projectId, userId);
+            if (!isLeader)
+            {
+                throw new UnauthorizedAccessException("Chỉ có trưởng dự án mới có quyền xóa.");
+            }
 
-            var project = await _repo.GetByIdAsync(id);
-            if (project == null) return false;
+            var project = await _projectRepository.GetByIdAsync(projectId);
+            if (project == null)
+            {
+                throw new NotFoundException("Không tìm thấy dự án để xóa.");
+            }
 
-            _repo.Delete(project);
-            return await _repo.SaveChangesAsync();
+            _projectRepository.Delete(project);
+            await _projectRepository.SaveChangesAsync();
+        }
+
+        // 6. Đặt phương thức ở đúng vị trí, là một phương thức của class
+        public async Task RemoveTeamFromProjectAsync(int projectId, int teamId, int userId)
+        {
+            var project = await _projectRepository.GetByIdAsync(projectId);
+            if (project == null) throw new NotFoundException("Không tìm thấy dự án.");
+
+            var team = await _teamRepository.GetByIdWithMembersAsync(teamId); // Cần lấy team kèm thành viên
+            if (team == null) throw new NotFoundException("Không tìm thấy team.");
+
+            if (project.CreatedByUserId != userId && team.CreatedByUserId != userId)
+            {
+                throw new UnauthorizedAccessException("Chỉ trưởng dự án hoặc trưởng nhóm mới có quyền thực hiện hành động này.");
+            }
+
+            var projectTeamLink = await _projectTeamRepository.FindAsync(projectId, teamId);
+            if (projectTeamLink != null)
+            {
+                _projectTeamRepository.Delete(projectTeamLink);
+            }
+
+            var projectLeaderId = project.CreatedByUserId;
+            foreach (var teamMember in team.Members)
+            {
+                if (teamMember.UserId == projectLeaderId)
+                {
+                    continue; // Giữ lại Project Leader
+                }
+
+                var projectMemberLink = await _projectMemberRepository.FindAsync(projectId, teamMember.UserId);
+                if (projectMemberLink != null)
+                {
+                    _projectMemberRepository.Delete(projectMemberLink);
+                }
+            }
+
+            await _projectRepository.SaveChangesAsync();
         }
     }
 }

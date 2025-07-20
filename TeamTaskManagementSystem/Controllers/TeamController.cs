@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Entities;
+using TeamTaskManagementSystem.Exceptions;
 using TeamTaskManagementSystem.Interfaces;
 
 namespace TeamTaskManagementSystem.Controllers
@@ -20,7 +21,25 @@ namespace TeamTaskManagementSystem.Controllers
 
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        [HttpGet]
+        [HttpDelete("{teamId}/leave-all-projects")]
+        public async Task<IActionResult> LeaveAllProjects(int teamId)
+        {
+            try
+            {
+                await _teamService.LeaveAllProjectsAsync(teamId, GetUserId());
+                return Ok(new { message = "Đã xóa team khỏi tất cả các dự án thành công." });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+
+        }
+            [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var teams = await _teamService.GetAllTeamsAsync();
@@ -46,25 +65,39 @@ namespace TeamTaskManagementSystem.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> DeleteTeam(int id)
         {
-            var success = await _teamService.DeleteTeamAsync(id);
-            if (!success) return NotFound();
-            return NoContent();
+            try
+            {
+                await _teamService.DeleteTeamAsync(id, GetUserId());
+                return NoContent(); // 204 No Content - Thành công
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message }); // 404
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message }); // 401
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Bắt lỗi nghiệp vụ và trả về 400 Bad Request
+                return BadRequest(new { message = ex.Message }); // 400
+            }
         }
+            //[HttpPost("{teamId}/members")]
+            //public async Task<IActionResult> AddMember(int teamId, [FromBody] int userId)
+            //{
+            //    if (!await _teamService.IsTeamLeaderAsync(teamId, GetUserId()))
+            //        return Forbid("Bạn không phải TeamLeader của team này.");
 
-        //[HttpPost("{teamId}/members")]
-        //public async Task<IActionResult> AddMember(int teamId, [FromBody] int userId)
-        //{
-        //    if (!await _teamService.IsTeamLeaderAsync(teamId, GetUserId()))
-        //        return Forbid("Bạn không phải TeamLeader của team này.");
+            //    var success = await _teamService.AddMemberAsync(teamId, userId);
+            //    if (!success) return BadRequest("Không thể thêm thành viên.");
+            //    return Ok("Đã thêm thành viên.");
+            //}
 
-        //    var success = await _teamService.AddMemberAsync(teamId, userId);
-        //    if (!success) return BadRequest("Không thể thêm thành viên.");
-        //    return Ok("Đã thêm thành viên.");
-        //}
-
-        [HttpDelete("{teamId}/members/{userId}")]
+            [HttpDelete("{teamId}/members/{userId}")]
         public async Task<IActionResult> RemoveMember(int teamId, int userId)
         {
             if (!await _teamService.IsTeamLeaderAsync(teamId, GetUserId()))

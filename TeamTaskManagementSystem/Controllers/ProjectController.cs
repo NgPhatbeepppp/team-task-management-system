@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Entities;
+using TeamTaskManagementSystem.Exceptions;
 using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Services;
 
 namespace TeamTaskManagementSystem.Controllers
 {
@@ -26,7 +28,23 @@ namespace TeamTaskManagementSystem.Controllers
             var projects = await _service.GetProjectsOfUserAsync(GetUserId());
             return Ok(projects);
         }
-
+        [HttpDelete("{projectId}/teams/{teamId}")]
+        public async Task<IActionResult> RemoveTeamFromProject(int projectId, int teamId)
+        {
+            try
+            {
+                await _service.RemoveTeamFromProjectAsync(projectId, teamId, GetUserId());
+                return NoContent();
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
         [HttpPost]
         public async Task<IActionResult> Create(Project project)
         {

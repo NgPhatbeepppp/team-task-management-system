@@ -4,7 +4,11 @@ namespace TeamTaskManagementSystem.Interfaces
 {
     public interface IProjectMemberRepository
     {
+        
+        Task<ProjectMember?> FindAsync(int projectId, int userId);
+
         Task AddAsync(ProjectMember member);
-        Task AddIfNotExistsAsync(int projectId, int userId);
+
+        void Delete(ProjectMember member);
     }
 }

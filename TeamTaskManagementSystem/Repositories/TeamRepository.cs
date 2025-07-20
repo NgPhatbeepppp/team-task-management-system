@@ -96,5 +96,5 @@ namespace TeamTaskManagementSystem.Repositories
             return await _context.TeamMembers.AnyAsync(tm => tm.TeamId == teamId && tm.UserId == userId);
         }
 
-    }
+    } 
 }
