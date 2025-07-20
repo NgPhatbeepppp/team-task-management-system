@@ -29,7 +29,13 @@ namespace TeamTaskManagementSystem.Repositories
         }
 
 
-        public async Task<IEnumerable<Team>> GetAllAsync() => await _context.Teams.ToListAsync();
+        public async Task<IEnumerable<Team>> GetAllAsync()
+        {
+            return await _context.Teams
+                                 .Include(t => t.Members)
+                                 .ThenInclude(tm => tm.User)
+                                 .ToListAsync();
+        }
 
         public async Task<Team?> GetByIdAsync(int id) => await _context.Teams.FindAsync(id);
 

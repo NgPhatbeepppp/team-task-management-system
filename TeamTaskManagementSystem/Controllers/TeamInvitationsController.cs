@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Interfaces;
 
-namespace TeamTaskManagementSystem.Controllers
+namespace TeamTaskManagementSystem .Controllers
 {
     // === CONTROLLER ĐỂ GỬI LỜI MỜI ===
     [ApiController]

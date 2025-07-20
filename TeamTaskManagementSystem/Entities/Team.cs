@@ -23,6 +23,7 @@ namespace TeamTaskManagementSystem.Entities
         // --- SỬA LỖI Ở ĐÂY ---
         // Một nhóm có nhiều thành viên
         [JsonIgnore]
+        [JsonPropertyName("teamMembers")]
         public virtual ICollection<TeamMember> Members { get; set; } = new List<TeamMember>();
 
         // Một nhóm tham gia nhiều dự án thông qua bảng nối ProjectTeam
