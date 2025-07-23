@@ -1,42 +1,86 @@
-﻿using TeamTaskManagementSystem.Entities;
+﻿// TeamTaskManagementSystem/Services/ProjectService.cs
+using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Exceptions;
 using TeamTaskManagementSystem.Interfaces;
-using TeamTaskManagementSystem.Repositories;
 
 namespace TeamTaskManagementSystem.Services
 {
     public class ProjectService : IProjectService
     {
-       
         private readonly IProjectRepository _projectRepository;
         private readonly ITeamRepository _teamRepository;
         private readonly IProjectTeamRepository _projectTeamRepository;
         private readonly IProjectMemberRepository _projectMemberRepository;
+        // <<< GHI CHÚ: Inject thêm IUserRepository để kiểm tra người dùng có tồn tại không.
+        private readonly IUserRepository _userRepository;
 
-        // 2. Constructor duy nhất, nhận tất cả dependency
         public ProjectService(
             IProjectRepository projectRepository,
             ITeamRepository teamRepository,
             IProjectTeamRepository projectTeamRepository,
-            IProjectMemberRepository projectMemberRepository)
+            IProjectMemberRepository projectMemberRepository,
+            IUserRepository userRepository) // Thêm vào constructor
         {
             _projectRepository = projectRepository;
             _teamRepository = teamRepository;
             _projectTeamRepository = projectTeamRepository;
             _projectMemberRepository = projectMemberRepository;
+            _userRepository = userRepository; // Gán repo
         }
 
+        // ... (các phương thức khác giữ nguyên) ...
+
+        // <<< GHI CHÚ: Triển khai phương thức mới với đầy đủ logic nghiệp vụ.
+        public async Task AddMemberToProjectAsync(int projectId, int targetUserId, int actorUserId)
+        {
+            // 1. Kiểm tra quyền: Chỉ có Project Leader mới được thêm thành viên
+            if (!await _projectRepository.IsUserProjectLeaderAsync(projectId, actorUserId))
+            {
+                throw new UnauthorizedAccessException("Chỉ trưởng dự án mới có quyền thêm thành viên.");
+            }
+
+            // 2. Kiểm tra người dùng được thêm có tồn tại trong hệ thống không
+            var userToAdd = await _userRepository.GetByIdAsync(targetUserId);
+            if (userToAdd == null)
+            {
+                throw new NotFoundException($"Không tìm thấy người dùng với ID {targetUserId} để thêm vào dự án.");
+            }
+
+            // 3. Kiểm tra xem người dùng đã là thành viên của dự án chưa
+            var existingMember = await _projectMemberRepository.FindAsync(projectId, targetUserId);
+            if (existingMember != null)
+            {
+                throw new InvalidOperationException("Người dùng này đã là thành viên của dự án.");
+            }
+
+            // 4. Nếu tất cả đều hợp lệ, tiến hành thêm
+            var newMember = new ProjectMember
+            {
+                ProjectId = projectId,
+                UserId = targetUserId,
+                RoleInProject = "Contributor" // Vai trò mặc định khi thêm
+            };
+
+            await _projectMemberRepository.AddAsync(newMember);
+            await _projectRepository.SaveChangesAsync(); // Lưu thay đổi
+        }
+
+        // ... (các phương thức khác giữ nguyên) ...
         public async Task<IEnumerable<Project>> GetProjectsOfUserAsync(int userId)
         {
             return await _projectRepository.GetProjectsOfUserAsync(userId);
         }
 
-        public async Task<Project?> GetByIdAsync(int id)
+        public async Task<Project> GetByIdAsync(int id)
         {
-            return await _projectRepository.GetByIdAsync(id);
+            var project = await _projectRepository.GetByIdAsync(id);
+            if (project == null)
+            {
+                throw new NotFoundException($"Không tìm thấy dự án với ID {id}.");
+            }
+            return project;
         }
 
-        // 3. Chuyển sang dùng void và Exception để xử lý lỗi
         public async Task CreateProjectAsync(Project project, int creatorUserId)
         {
             project.CreatedByUserId = creatorUserId;
@@ -59,54 +103,39 @@ namespace TeamTaskManagementSystem.Services
             await _projectRepository.SaveChangesAsync();
         }
 
-        // 4. Chuyển sang dùng void và Exception để xử lý lỗi
         public async Task UpdateProjectAsync(Project project, int userId)
         {
-            var isLeader = await _projectRepository.IsUserProjectLeaderAsync(project.Id, userId);
-            if (!isLeader)
+            if (!await _projectRepository.IsUserProjectLeaderAsync(project.Id, userId))
             {
                 throw new UnauthorizedAccessException("Chỉ có trưởng dự án mới có quyền chỉnh sửa.");
             }
 
-            var existingProject = await _projectRepository.GetByIdAsync(project.Id);
-            if (existingProject == null)
-            {
-                throw new NotFoundException("Không tìm thấy dự án để cập nhật.");
-            }
+            var existingProject = await GetByIdAsync(project.Id);
 
             existingProject.Name = project.Name;
             existingProject.Description = project.Description;
 
-            _projectRepository.Update(existingProject); // Update thực thể đang được theo dõi
+            _projectRepository.Update(existingProject);
             await _projectRepository.SaveChangesAsync();
         }
 
-        // 5. Chuyển sang dùng void và Exception để xử lý lỗi
         public async Task DeleteProjectAsync(int projectId, int userId)
         {
-            var isLeader = await _projectRepository.IsUserProjectLeaderAsync(projectId, userId);
-            if (!isLeader)
+            if (!await _projectRepository.IsUserProjectLeaderAsync(projectId, userId))
             {
                 throw new UnauthorizedAccessException("Chỉ có trưởng dự án mới có quyền xóa.");
             }
 
-            var project = await _projectRepository.GetByIdAsync(projectId);
-            if (project == null)
-            {
-                throw new NotFoundException("Không tìm thấy dự án để xóa.");
-            }
+            var project = await GetByIdAsync(projectId);
 
             _projectRepository.Delete(project);
             await _projectRepository.SaveChangesAsync();
         }
 
-        // 6. Đặt phương thức ở đúng vị trí, là một phương thức của class
         public async Task RemoveTeamFromProjectAsync(int projectId, int teamId, int userId)
         {
-            var project = await _projectRepository.GetByIdAsync(projectId);
-            if (project == null) throw new NotFoundException("Không tìm thấy dự án.");
-
-            var team = await _teamRepository.GetByIdWithMembersAsync(teamId); // Cần lấy team kèm thành viên
+            var project = await GetByIdAsync(projectId);
+            var team = await _teamRepository.GetByIdWithMembersAsync(teamId);
             if (team == null) throw new NotFoundException("Không tìm thấy team.");
 
             if (project.CreatedByUserId != userId && team.CreatedByUserId != userId)
@@ -121,17 +150,20 @@ namespace TeamTaskManagementSystem.Services
             }
 
             var projectLeaderId = project.CreatedByUserId;
-            foreach (var teamMember in team.Members)
+            if (team.Members != null)
             {
-                if (teamMember.UserId == projectLeaderId)
+                foreach (var teamMember in team.Members)
                 {
-                    continue; // Giữ lại Project Leader
-                }
+                    if (teamMember.UserId == projectLeaderId)
+                    {
+                        continue;
+                    }
 
-                var projectMemberLink = await _projectMemberRepository.FindAsync(projectId, teamMember.UserId);
-                if (projectMemberLink != null)
-                {
-                    _projectMemberRepository.Delete(projectMemberLink);
+                    var projectMemberLink = await _projectMemberRepository.FindAsync(projectId, teamMember.UserId);
+                    if (projectMemberLink != null)
+                    {
+                        _projectMemberRepository.Delete(projectMemberLink);
+                    }
                 }
             }
 

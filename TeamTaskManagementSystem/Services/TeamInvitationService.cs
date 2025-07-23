@@ -1,4 +1,5 @@
-﻿using TeamTaskManagementSystem.Entities;
+﻿// TeamTaskManagementSystem/Services/TeamInvitationService.cs
+using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Interfaces;
 using System.Threading.Tasks;
 
@@ -8,15 +9,40 @@ namespace TeamTaskManagementSystem.Services
     {
         private readonly ITeamRepository _teamRepo;
         private readonly IUserRepository _userRepo;
-        private readonly ITeamInvitationRepository _invitationRepo; // ✨ THAY THẾ DbContext BẰNG REPO
+        private readonly ITeamInvitationRepository _invitationRepo;
 
         public TeamInvitationService(ITeamRepository teamRepo, IUserRepository userRepo, ITeamInvitationRepository invitationRepo)
         {
             _teamRepo = teamRepo;
             _userRepo = userRepo;
-            _invitationRepo = invitationRepo; // ✨ GÁN REPO
+            _invitationRepo = invitationRepo;
         }
 
+        public async Task<bool> AcceptInvitationAsync(int invitationId, int handlerUserId)
+        {
+            var invitation = await _invitationRepo.GetByIdAsync(invitationId);
+
+            if (invitation == null || invitation.Status != "Pending" || invitation.InvitedUserId != handlerUserId)
+                return false;
+
+            invitation.Status = "Accepted";
+            _invitationRepo.Update(invitation);
+
+           
+            // Tạo một đối tượng TeamMember mới và truyền vào phương thức AddMemberAsync.
+            var newMember = new TeamMember
+            {
+                TeamId = invitation.TeamId,
+                UserId = invitation.InvitedUserId,
+                RoleInTeam = "Member" 
+            };
+            await _teamRepo.AddMemberAsync(newMember);
+
+            // Lưu tất cả các thay đổi (cả update status và add member)
+            return await _teamRepo.SaveChangesAsync();
+        }
+
+        
         public async Task<bool> InviteUserToTeamAsync(int teamId, int targetUserId, int inviterUserId)
         {
             if (!await _teamRepo.IsTeamLeaderAsync(teamId, inviterUserId))
@@ -26,7 +52,7 @@ namespace TeamTaskManagementSystem.Services
                 return false;
 
             var isAlreadyMember = await _teamRepo.IsMemberAsync(teamId, targetUserId);
-            var hasPendingInvitation = await _invitationRepo.HasPendingInvitationAsync(teamId, targetUserId); // ✨ SỬ DỤNG REPO
+            var hasPendingInvitation = await _invitationRepo.HasPendingInvitationAsync(teamId, targetUserId);
 
             if (isAlreadyMember || hasPendingInvitation)
                 return false;
@@ -38,41 +64,21 @@ namespace TeamTaskManagementSystem.Services
                 InvitedByUserId = inviterUserId
             };
 
-            await _invitationRepo.AddAsync(invitation); // ✨ SỬ DỤNG REPO
-            return await _invitationRepo.SaveChangesAsync(); // ✨ SỬ DỤNG REPO
-        }
-
-        public async Task<bool> AcceptInvitationAsync(int invitationId, int handlerUserId)
-        {
-            var invitation = await _invitationRepo.GetByIdAsync(invitationId); // ✨ SỬ DỤNG REPO
-
-            if (invitation == null || invitation.Status != "Pending" || invitation.InvitedUserId != handlerUserId)
-                return false;
-
-            invitation.Status = "Accepted";
-            _invitationRepo.Update(invitation); // Báo cho EF Core biết là có thay đổi
-
-            // Thêm thành viên vào team
-            await _teamRepo.AddMemberAsync(invitation.TeamId, invitation.InvitedUserId);
-
-            // SaveChanges trong AddMember của TeamRepository đã xử lý việc lưu
-            // nên ta không cần gọi lại. Nếu AddMember không có SaveChanges,
-            // bạn sẽ cần gọi await _invitationRepo.SaveChangesAsync(); ở đây.
-
-            return true;
+            await _invitationRepo.AddAsync(invitation);
+            return await _invitationRepo.SaveChangesAsync();
         }
 
         public async Task<bool> RejectInvitationAsync(int invitationId, int handlerUserId)
         {
-            var invitation = await _invitationRepo.GetByIdAsync(invitationId); // ✨ SỬ DỤNG REPO
+            var invitation = await _invitationRepo.GetByIdAsync(invitationId);
 
             if (invitation == null || invitation.Status != "Pending" || invitation.InvitedUserId != handlerUserId)
                 return false;
 
             invitation.Status = "Rejected";
-            _invitationRepo.Update(invitation); // Báo cho EF Core biết là có thay đổi
+            _invitationRepo.Update(invitation);
 
-            return await _invitationRepo.SaveChangesAsync(); // ✨ SỬ DỤNG REPO
+            return await _invitationRepo.SaveChangesAsync();
         }
     }
 }

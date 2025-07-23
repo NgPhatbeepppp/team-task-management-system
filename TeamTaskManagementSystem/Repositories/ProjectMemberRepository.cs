@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// TeamTaskManagementSystem/Repositories/ProjectMemberRepository.cs
+using Microsoft.EntityFrameworkCore;
 using TeamTaskManagementSystem.Data;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Interfaces;
@@ -19,19 +20,15 @@ namespace TeamTaskManagementSystem.Repositories
             await _context.ProjectMembers.AddAsync(member);
         }
 
-        public async Task AddIfNotExistsAsync(int projectId, int userId)
+        public async Task<ProjectMember?> FindAsync(int projectId, int userId)
         {
-            var exists = await _context.ProjectMembers
-                .AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == userId);
-            if (!exists)
-            {
-                await _context.ProjectMembers.AddAsync(new ProjectMember
-                {
-                    ProjectId = projectId,
-                    UserId = userId,
-                    RoleInProject = "Contributor"
-                });
-            }
+            return await _context.ProjectMembers
+                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.UserId == userId);
+        }
+
+        public void Delete(ProjectMember member)
+        {
+            _context.ProjectMembers.Remove(member);
         }
     }
 }

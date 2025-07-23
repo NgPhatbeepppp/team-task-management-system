@@ -1,11 +1,16 @@
-﻿using TeamTaskManagementSystem.Entities;
+﻿// TeamTaskManagementSystem/Interfaces/IProjectTeamRepository.cs
+using TeamTaskManagementSystem.Entities;
 
 namespace TeamTaskManagementSystem.Interfaces
 {
     public interface IProjectTeamRepository
     {
-        Task AddAsync(ProjectTeam team);
-        Task<ProjectMember?> FindAsync(int projectId, int userId);
-        void Delete(ProjectMember member);
+        // <<< GHI CHÚ: Sửa lại tham số và kiểu dữ liệu cho đúng với ProjectTeam
+        Task<ProjectTeam?> FindAsync(int projectId, int teamId);
+
+        Task AddAsync(ProjectTeam projectTeam);
+
+        // <<< GHI CHÚ: Sửa lại tham số cho đúng với ProjectTeam
+        void Delete(ProjectTeam projectTeam);
     }
 }

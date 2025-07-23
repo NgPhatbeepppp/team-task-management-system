@@ -1,109 +1,92 @@
-﻿using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Exceptions; // Đảm bảo bạn đã tạo file này
+﻿// TeamTaskManagementSystem/Services/TeamService.cs
+using TeamTaskManagementSystem.Entities;
+using TeamTaskManagementSystem.Exceptions;
 using TeamTaskManagementSystem.Interfaces;
-using TeamTaskManagementSystem.Repositories;
 
 namespace TeamTaskManagementSystem.Services
 {
     public class TeamService : ITeamService
     {
         private readonly ITeamRepository _teamRepository;
-        private readonly IProjectService _projectService; // Thêm project service để xử lý logic rời project
+        private readonly IProjectService _projectService;
 
-        
         public TeamService(ITeamRepository teamRepository, IProjectService projectService)
         {
             _teamRepository = teamRepository;
             _projectService = projectService;
         }
-        public async Task LeaveAllProjectsAsync(int teamId, int userId)
+
+        // <<< GHI CHÚ: Toàn bộ logic tạo team và gán leader được đưa về đây.
+        public async Task CreateTeamAsync(Team team, int creatorUserId)
         {
-            var team = await _teamRepository.GetByIdAsync(teamId);
-            if (team == null)
-            {
-                throw new NotFoundException("Không tìm thấy team.");
-            }
+            team.CreatedByUserId = creatorUserId;
+            team.CreatedAt = DateTime.UtcNow;
 
-            if (team.CreatedByUserId != userId)
+            // Thêm bản thân người tạo làm TeamLeader
+            team.Members.Add(new TeamMember
             {
-                throw new UnauthorizedAccessException("Chỉ có trưởng nhóm mới có quyền thực hiện hành động này.");
-            }
+                UserId = creatorUserId,
+                RoleInTeam = "TeamLeader"
+            });
 
-            if (team.Projects == null || !team.Projects.Any())
-            {
-                // Không có gì để làm
-                return;
-            }
-
-            // Tạo một bản sao của danh sách project để duyệt, vì collection gốc sẽ bị thay đổi
-            var projectsToRemove = team.Projects.ToList();
-
-            foreach (var projectLink in projectsToRemove)
-            {
-                // Gọi phương thức đã tạo ở ProjectService
-                // userId ở đây được truyền vào để kiểm tra quyền trong từng project
-                await _projectService.RemoveTeamFromProjectAsync(projectLink.ProjectId, teamId, userId);
-            }
+            await _teamRepository.AddAsync(team);
+            await _teamRepository.SaveChangesAsync();
         }
+
         public async Task<IEnumerable<Team>> GetAllTeamsAsync()
         {
             return await _teamRepository.GetAllAsync();
         }
 
-        public async Task<Team?> GetTeamByIdAsync(int id)
+        public async Task<Team> GetTeamByIdAsync(int id)
         {
-            return await _teamRepository.GetByIdAsync(id);
-        }
-
-        public async Task CreateTeamAsync(Team team, int creatorUserId)
-        {
-            // Service nên là void hoặc trả về DTO, không nên trả về bool
-            // Lỗi sẽ được xử lý bằng Exception
-            await _teamRepository.CreateTeamAsync(team, creatorUserId);
-        }
-
-        public async Task UpdateTeamAsync(Team team)
-        {
-            _teamRepository.Update(team);
-            await _teamRepository.SaveChangesAsync();
-        }
-
-        /// <summary>
-        /// Xóa một team. Chỉ xóa được khi team không còn tham gia dự án nào.
-        /// </summary>
-        public async Task DeleteTeamAsync(int teamId, int userId)
-        {
-            var team = await _teamRepository.GetByIdWithProjectsAsync(teamId); // Lấy team kèm thông tin project
+            var team = await _teamRepository.GetByIdAsync(id);
             if (team == null)
             {
                 throw new NotFoundException("Không tìm thấy team.");
             }
+            return team;
+        }
+
+        public async Task UpdateTeamAsync(Team team, int updaterUserId)
+        {
+            if (!await _teamRepository.IsTeamLeaderAsync(team.Id, updaterUserId))
+            {
+                throw new UnauthorizedAccessException("Chỉ trưởng nhóm mới có quyền chỉnh sửa.");
+            }
+            var existingTeam = await GetTeamByIdAsync(team.Id); // Sử dụng lại GetById để kiểm tra tồn tại
+
+            existingTeam.Name = team.Name;
+            existingTeam.Description = team.Description;
+
+            _teamRepository.Update(existingTeam);
+            await _teamRepository.SaveChangesAsync();
+        }
+
+        public async Task DeleteTeamAsync(int teamId, int userId)
+        {
+            var team = await _teamRepository.GetByIdWithProjectsAsync(teamId);
+            if (team == null) throw new NotFoundException("Không tìm thấy team.");
 
             if (team.CreatedByUserId != userId)
             {
-                throw new UnauthorizedAccessException("Chỉ có trưởng nhóm mới được quyền xóa team.");
+                throw new UnauthorizedAccessException("Chỉ có người tạo team (trưởng nhóm đầu tiên) mới được quyền xóa team.");
             }
 
-            // Logic nghiệp vụ: Không cho xóa khi team còn tham gia project
             if (team.Projects != null && team.Projects.Any())
             {
-                throw new InvalidOperationException("Team đang tham gia ít nhất một dự án. Bạn cần xóa team khỏi tất cả các dự án trước khi xóa team.");
+                throw new InvalidOperationException("Team đang tham gia ít nhất một dự án. Bạn cần yêu cầu team rời khỏi tất cả các dự án trước khi xóa.");
             }
 
             _teamRepository.Delete(team);
             await _teamRepository.SaveChangesAsync();
         }
 
-        /// <summary>
-        /// Yêu cầu team rời khỏi tất cả các dự án đang tham gia.
-        /// </summary>
+        // <<< GHI CHÚ: Xóa phương thức bị trùng lặp.
         public async Task LeaveAllProjectsAsync(int teamId, int userId)
         {
             var team = await _teamRepository.GetByIdWithProjectsAsync(teamId);
-            if (team == null)
-            {
-                throw new NotFoundException("Không tìm thấy team.");
-            }
+            if (team == null) throw new NotFoundException("Không tìm thấy team.");
 
             if (team.CreatedByUserId != userId)
             {
@@ -115,35 +98,62 @@ namespace TeamTaskManagementSystem.Services
                 return; // Không có gì để làm
             }
 
-            // Tạo một bản sao của danh sách project ID để tránh lỗi "Collection was modified"
             var projectIds = team.Projects.Select(p => p.ProjectId).ToList();
-
             foreach (var projectId in projectIds)
             {
-                // Gọi phương thức từ ProjectService để xử lý logic xóa team khỏi từng project
                 await _projectService.RemoveTeamFromProjectAsync(projectId, teamId, userId);
             }
         }
 
-        public async Task AddMemberAsync(int teamId, int userId)
+        public async Task AddMemberAsync(int teamId, int targetUserId, int actorUserId)
         {
-            var exists = await _teamRepository.IsMemberAsync(teamId, userId);
-            if (exists)
+            if (!await _teamRepository.IsTeamLeaderAsync(teamId, actorUserId))
             {
-                // Ném lỗi rõ ràng thay vì trả về false
+                throw new UnauthorizedAccessException("Chỉ trưởng nhóm mới có quyền thêm thành viên.");
+            }
+
+            if (await _teamRepository.IsMemberAsync(teamId, targetUserId))
+            {
                 throw new InvalidOperationException("Thành viên đã có trong team.");
             }
-            await _teamRepository.AddMemberAsync(teamId, userId);
+
+            var newMember = new TeamMember { TeamId = teamId, UserId = targetUserId, RoleInTeam = "Member" };
+            await _teamRepository.AddMemberAsync(newMember);
+            await _teamRepository.SaveChangesAsync();
         }
 
-        public async Task RemoveMemberAsync(int teamId, int userId)
+        public async Task RemoveMemberAsync(int teamId, int targetUserId, int actorUserId)
         {
-            await _teamRepository.RemoveMemberAsync(teamId, userId);
+            if (!await _teamRepository.IsTeamLeaderAsync(teamId, actorUserId))
+            {
+                throw new UnauthorizedAccessException("Chỉ trưởng nhóm mới có quyền xóa thành viên.");
+            }
+
+            var member = await _teamRepository.GetTeamMemberAsync(teamId, targetUserId);
+            if (member == null)
+            {
+                throw new NotFoundException("Không tìm thấy thành viên trong team.");
+            }
+
+            await _teamRepository.RemoveMemberAsync(member);
+            await _teamRepository.SaveChangesAsync();
         }
 
-        public async Task GrantTeamLeaderAsync(int teamId, int targetUserId)
+        public async Task GrantTeamLeaderAsync(int teamId, int targetUserId, int actorUserId)
         {
-            await _teamRepository.GrantTeamLeaderAsync(teamId, targetUserId);
+            if (!await _teamRepository.IsTeamLeaderAsync(teamId, actorUserId))
+            {
+                throw new UnauthorizedAccessException("Chỉ trưởng nhóm mới có thể chuyển quyền.");
+            }
+
+            var member = await _teamRepository.GetTeamMemberAsync(teamId, targetUserId);
+            if (member == null)
+            {
+                throw new NotFoundException("Thành viên không tồn tại trong team để trao quyền.");
+            }
+
+            member.RoleInTeam = "TeamLeader";
+            await _teamRepository.SaveChangesAsync();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// TeamTaskManagementSystem/Services/InvitationService.cs
+
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Interfaces;
 
@@ -8,22 +9,22 @@ namespace TeamTaskManagementSystem.Services
     {
         private readonly IProjectInvitationRepository _invitationRepo;
         private readonly IProjectMemberRepository _memberRepo;
-        private readonly IProjectTeamRepository _projectTeamRepo; 
+        private readonly IProjectTeamRepository _projectTeamRepo;
         private readonly ITeamMemberRepository _teamMemberRepo;
-        private readonly ITeamRepository _teamRepository; 
+        private readonly ITeamRepository _teamRepository;
 
         public InvitationService(
             IProjectInvitationRepository invitationRepo,
             IProjectMemberRepository memberRepo,
             IProjectTeamRepository projectTeamRepo,
             ITeamMemberRepository teamMemberRepo,
-            ITeamRepository teamRepository) 
+            ITeamRepository teamRepository)
         {
             _invitationRepo = invitationRepo;
             _memberRepo = memberRepo;
-            _projectTeamRepo = projectTeamRepo; 
+            _projectTeamRepo = projectTeamRepo;
             _teamMemberRepo = teamMemberRepo;
-            _teamRepository = teamRepository; 
+            _teamRepository = teamRepository;
         }
 
         public async Task<bool> AcceptInvitationAsync(int invitationId, int handlerUserId)
@@ -31,37 +32,23 @@ namespace TeamTaskManagementSystem.Services
             var invitation = await _invitationRepo.GetByIdAsync(invitationId);
             if (invitation == null || invitation.Status != "Pending") return false;
 
-          
-            bool isAllowed = false;
-            if (invitation.InvitedUserId.HasValue && invitation.InvitedUserId.Value == handlerUserId)
-            {
-                isAllowed = true; // Cho phép vì là người được mời trực tiếp
-            }
-            else if (invitation.InvitedTeamId.HasValue)
-            {
-                // Kiểm tra xem người xử lý có phải là TeamLeader của team được mời không
-                isAllowed = await _teamRepository.IsTeamLeaderAsync(invitation.InvitedTeamId.Value, handlerUserId);
-            }
+            bool isAllowed = (invitation.InvitedUserId.HasValue && invitation.InvitedUserId.Value == handlerUserId) ||
+                             (invitation.InvitedTeamId.HasValue && await _teamRepository.IsTeamLeaderAsync(invitation.InvitedTeamId.Value, handlerUserId));
 
-            if (!isAllowed)
-            {
-                return false; // Không có quyền -> Từ chối
-            }
+            if (!isAllowed) return false;
 
             invitation.Status = "Accepted";
 
-            // Nếu là người dùng
             if (invitation.InvitedUserId.HasValue)
             {
                 await _memberRepo.AddAsync(new ProjectMember
                 {
                     ProjectId = invitation.ProjectId,
                     UserId = invitation.InvitedUserId.Value,
-                    RoleInProject = "Contributor" // Sửa luôn lỗi thiếu Role ở đây
+                    RoleInProject = "Contributor"
                 });
             }
 
-            // Nếu là team
             if (invitation.InvitedTeamId.HasValue)
             {
                 await _projectTeamRepo.AddAsync(new ProjectTeam
@@ -73,7 +60,18 @@ namespace TeamTaskManagementSystem.Services
                 var teamMembers = await _teamMemberRepo.GetUserIdsByTeamIdAsync(invitation.InvitedTeamId.Value);
                 foreach (var userId in teamMembers)
                 {
-                    await _memberRepo.AddIfNotExistsAsync(invitation.ProjectId, userId);
+                    // <<< GHI CHÚ: Sửa lỗi tại đây
+                    // Thay vì gọi `AddIfNotExistsAsync`, chúng ta sẽ thực hiện logic kiểm tra ngay tại đây.
+                    var memberExists = await _memberRepo.FindAsync(invitation.ProjectId, userId);
+                    if (memberExists == null) // Chỉ thêm nếu thành viên chưa có trong dự án
+                    {
+                        await _memberRepo.AddAsync(new ProjectMember
+                        {
+                            ProjectId = invitation.ProjectId,
+                            UserId = userId,
+                            RoleInProject = "Contributor"
+                        });
+                    }
                 }
             }
 
@@ -81,12 +79,13 @@ namespace TeamTaskManagementSystem.Services
             return true;
         }
 
+       
         public async Task<bool> RejectInvitationAsync(int invitationId, int handlerUserId)
         {
             var invitation = await _invitationRepo.GetByIdAsync(invitationId);
             if (invitation == null || invitation.Status != "Pending") return false;
 
-            
+
             bool isAllowed = false;
             if (invitation.InvitedUserId.HasValue && invitation.InvitedUserId.Value == handlerUserId)
             {

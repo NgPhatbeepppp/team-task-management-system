@@ -1,7 +1,8 @@
-﻿using TeamTaskManagementSystem.Data;
+﻿// TeamTaskManagementSystem/Repositories/TeamRepository.cs
+using Microsoft.EntityFrameworkCore;
+using TeamTaskManagementSystem.Data;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Interfaces;
-using Microsoft.EntityFrameworkCore;
 
 namespace TeamTaskManagementSystem.Repositories
 {
@@ -13,39 +14,37 @@ namespace TeamTaskManagementSystem.Repositories
         {
             _context = context;
         }
-        public async Task<bool> CreateTeamAsync(Team team, int creatorUserId)
+
+        
+        public async Task AddAsync(Team team)
         {
-            team.CreatedByUserId = creatorUserId;
             await _context.Teams.AddAsync(team);
-
-            _context.TeamMembers.Add(new TeamMember
-            {
-                Team = team,
-                UserId = creatorUserId,
-                RoleInTeam = "TeamLeader"
-            });
-
-            return await _context.SaveChangesAsync() > 0;
         }
 
+        public void Delete(Team team) => _context.Teams.Remove(team);
 
-        public async Task<IEnumerable<Team>> GetAllAsync()
-        {
-            return await _context.Teams
-                                 .Include(t => t.Members)
-                                 .ThenInclude(tm => tm.User)
-                                 .ToListAsync();
-        }
+        public async Task<IEnumerable<Team>> GetAllAsync() => await _context.Teams.Include(t => t.Members).ThenInclude(tm => tm.User).ToListAsync();
 
         public async Task<Team?> GetByIdAsync(int id) => await _context.Teams.FindAsync(id);
 
-        public async Task AddAsync(Team team) => await _context.Teams.AddAsync(team);
+        public async Task<Team?> GetByIdWithProjectsAsync(int teamId)
+        {
+            return await _context.Teams
+                .Include(t => t.Projects)
+                .FirstOrDefaultAsync(t => t.Id == teamId);
+        }
 
-        public void Update(Team team) => _context.Teams.Update(team);
+        public async Task<Team?> GetByIdWithMembersAsync(int teamId)
+        {
+            return await _context.Teams
+                .Include(t => t.Members)
+                .FirstOrDefaultAsync(t => t.Id == teamId);
+        }
 
-        public void Delete(Team team) => _context.Teams.Remove(team);
-       
-        public async Task<bool> SaveChangesAsync() => await _context.SaveChangesAsync() > 0;
+        public async Task<bool> IsMemberAsync(int teamId, int userId)
+        {
+            return await _context.TeamMembers.AnyAsync(tm => tm.TeamId == teamId && tm.UserId == userId);
+        }
 
         public async Task<bool> IsTeamLeaderAsync(int teamId, int userId)
         {
@@ -54,47 +53,25 @@ namespace TeamTaskManagementSystem.Repositories
                 tm.UserId == userId &&
                 tm.RoleInTeam == "TeamLeader");
         }
-        public async Task<bool> AddMemberAsync(int teamId, int userId)
+
+        public async Task AddMemberAsync(TeamMember member)
         {
-            var exists = await _context.TeamMembers.AnyAsync(tm => tm.TeamId == teamId && tm.UserId == userId);
-            if (exists) return false;
-
-            _context.TeamMembers.Add(new TeamMember
-            {
-                TeamId = teamId,
-                UserId = userId,
-                RoleInTeam = "Member"
-            });
-
-            return await _context.SaveChangesAsync() > 0;
+            await _context.TeamMembers.AddAsync(member);
         }
 
-        public async Task<bool> RemoveMemberAsync(int teamId, int userId)
+        public async Task RemoveMemberAsync(TeamMember member)
         {
-            var member = await _context.TeamMembers
-                .FirstOrDefaultAsync(tm => tm.TeamId == teamId && tm.UserId == userId);
-
-            if (member == null) return false;
-
             _context.TeamMembers.Remove(member);
-            return await _context.SaveChangesAsync() > 0;
+            await Task.CompletedTask;
         }
 
-        public async Task<bool> GrantTeamLeaderAsync(int teamId, int userId)
+        public async Task<TeamMember?> GetTeamMemberAsync(int teamId, int userId)
         {
-            var member = await _context.TeamMembers
-                .FirstOrDefaultAsync(tm => tm.TeamId == teamId && tm.UserId == userId);
-
-            if (member == null) return false;
-
-            member.RoleInTeam = "TeamLeader";
-            return await _context.SaveChangesAsync() > 0;
+            return await _context.TeamMembers.FirstOrDefaultAsync(tm => tm.TeamId == teamId && tm.UserId == userId);
         }
 
-        public async Task<bool> IsMemberAsync(int teamId, int userId)
-        {
-            return await _context.TeamMembers.AnyAsync(tm => tm.TeamId == teamId && tm.UserId == userId);
-        }
+        public async Task<bool> SaveChangesAsync() => await _context.SaveChangesAsync() > 0;
 
-    } 
+        public void Update(Team team) => _context.Teams.Update(team);
+    }
 }

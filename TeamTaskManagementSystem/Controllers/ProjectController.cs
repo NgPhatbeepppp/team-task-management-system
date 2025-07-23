@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿// TeamTaskManagementSystem/Controllers/ProjectController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Exceptions;
 using TeamTaskManagementSystem.Interfaces;
-using TeamTaskManagementSystem.Services;
 
 namespace TeamTaskManagementSystem.Controllers
 {
@@ -22,12 +22,38 @@ namespace TeamTaskManagementSystem.Controllers
 
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
+        // ... (các endpoint khác giữ nguyên) ...
+
+        // <<< GHI CHÚ: Thêm endpoint mới để thêm thành viên.
+        [HttpPost("{projectId}/members/{targetUserId}")]
+        public async Task<IActionResult> AddMemberToProject(int projectId, int targetUserId)
+        {
+            try
+            {
+                await _service.AddMemberToProjectAsync(projectId, targetUserId, GetUserId());
+                return Ok(new { message = "Thêm thành viên vào dự án thành công." });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet("mine")]
         public async Task<IActionResult> GetMine()
         {
             var projects = await _service.GetProjectsOfUserAsync(GetUserId());
             return Ok(projects);
         }
+
         [HttpDelete("{projectId}/teams/{teamId}")]
         public async Task<IActionResult> RemoveTeamFromProject(int projectId, int teamId)
         {
@@ -45,29 +71,70 @@ namespace TeamTaskManagementSystem.Controllers
                 return Unauthorized(new { message = ex.Message });
             }
         }
+
         [HttpPost]
         public async Task<IActionResult> Create(Project project)
         {
-            var success = await _service.CreateProjectAsync(project, GetUserId());
-            if (!success) return BadRequest("Không thể tạo project.");
-            return Ok(project);
+            try
+            {
+                await _service.CreateProjectAsync(project, GetUserId());
+                return CreatedAtAction(nameof(GetById), new { id = project.Id }, project);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            try
+            {
+                var project = await _service.GetByIdAsync(id);
+                return Ok(project);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, Project project)
         {
-            if (id != project.Id) return BadRequest("Id không khớp.");
-            var success = await _service.UpdateProjectAsync(project, GetUserId());
-            if (!success) return StatusCode(403, "Bạn không có quyền sửa project.");
-            return NoContent();
+            if (id != project.Id) return BadRequest("Id trong route và trong body không khớp.");
+            try
+            {
+                await _service.UpdateProjectAsync(project, GetUserId());
+                return NoContent();
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var success = await _service.DeleteProjectAsync(id, GetUserId());
-            if (!success) return Forbid("Bạn không có quyền xoá project.");
-            return NoContent();
+            try
+            {
+                await _service.DeleteProjectAsync(id, GetUserId());
+                return NoContent();
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿// TeamTaskManagementSystem/Controllers/TeamController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Entities;
@@ -21,13 +22,51 @@ namespace TeamTaskManagementSystem.Controllers
 
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        [HttpDelete("{teamId}/leave-all-projects")]
-        public async Task<IActionResult> LeaveAllProjects(int teamId)
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var teams = await _teamService.GetAllTeamsAsync();
+            return Ok(teams);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
         {
             try
             {
-                await _teamService.LeaveAllProjectsAsync(teamId, GetUserId());
-                return Ok(new { message = "Đã xóa team khỏi tất cả các dự án thành công." });
+                var team = await _teamService.GetTeamByIdAsync(id);
+                return Ok(team);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        // <<< GHI CHÚ: Hoàn toàn làm lại theo pattern try-catch.
+        [HttpPost]
+        public async Task<IActionResult> Create(Team team)
+        {
+            try
+            {
+                await _teamService.CreateTeamAsync(team, GetUserId());
+                return CreatedAtAction(nameof(GetById), new { id = team.Id }, team);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, Team team)
+        {
+            if (id != team.Id) return BadRequest("Id không khớp.");
+
+            try
+            {
+                await _teamService.UpdateTeamAsync(team, GetUserId());
+                return NoContent();
             }
             catch (NotFoundException ex)
             {
@@ -35,88 +74,109 @@ namespace TeamTaskManagementSystem.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Forbid(ex.Message);
             }
-
-        }
-            [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var teams = await _teamService.GetAllTeamsAsync();
-            return Ok(teams);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Create(Team team)
-        {
-            var userId = GetUserId();
-            var success = await _teamService.CreateTeamAsync(team, userId);
-            if (!success) return BadRequest("Không thể tạo team.");
-            return Ok(team);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, Team team)
-        {
-            if (id != team.Id) return BadRequest("Id không khớp.");
-            var success = await _teamService.UpdateTeamAsync(team);
-            if (!success) return NotFound();
-            return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTeam(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             try
             {
                 await _teamService.DeleteTeamAsync(id, GetUserId());
-                return NoContent(); // 204 No Content - Thành công
+                return NoContent();
             }
             catch (NotFoundException ex)
             {
-                return NotFound(new { message = ex.Message }); // 404
+                return NotFound(new { message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized(new { message = ex.Message }); // 401
+                return Forbid(ex.Message);
             }
             catch (InvalidOperationException ex)
             {
-                // Bắt lỗi nghiệp vụ và trả về 400 Bad Request
-                return BadRequest(new { message = ex.Message }); // 400
+                // Bắt lỗi nghiệp vụ (ví dụ: team còn trong project)
+                return BadRequest(new { message = ex.Message });
             }
         }
-            //[HttpPost("{teamId}/members")]
-            //public async Task<IActionResult> AddMember(int teamId, [FromBody] int userId)
-            //{
-            //    if (!await _teamService.IsTeamLeaderAsync(teamId, GetUserId()))
-            //        return Forbid("Bạn không phải TeamLeader của team này.");
 
-            //    var success = await _teamService.AddMemberAsync(teamId, userId);
-            //    if (!success) return BadRequest("Không thể thêm thành viên.");
-            //    return Ok("Đã thêm thành viên.");
-            //}
-
-            [HttpDelete("{teamId}/members/{userId}")]
-        public async Task<IActionResult> RemoveMember(int teamId, int userId)
+        [HttpPost("{teamId}/leave-all-projects")]
+        public async Task<IActionResult> LeaveAllProjects(int teamId)
         {
-            if (!await _teamService.IsTeamLeaderAsync(teamId, GetUserId()))
-                return Forbid("Bạn không phải TeamLeader của team này.");
-
-            var success = await _teamService.RemoveMemberAsync(teamId, userId);
-            if (!success) return NotFound("Không tìm thấy thành viên.");
-            return Ok("Đã xoá thành viên.");
+            try
+            {
+                await _teamService.LeaveAllProjectsAsync(teamId, GetUserId());
+                return Ok(new { message = "Đã yêu cầu team rời khỏi tất cả các dự án thành công." });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
         }
 
-        [HttpPost("{teamId}/grant-leader")]
-        public async Task<IActionResult> GrantLeader(int teamId, [FromBody] int targetUserId)
-        {
-            if (!await _teamService.IsTeamLeaderAsync(teamId, GetUserId()))
-                return Forbid("Chỉ TeamLeader mới có thể chuyển quyền.");
+        // --- Quản lý thành viên ---
 
-            var success = await _teamService.GrantTeamLeaderAsync(teamId, targetUserId);
-            if (!success) return BadRequest("Không thể trao quyền.");
-            return Ok("Đã chuyển quyền TeamLeader.");
+        [HttpPost("{teamId}/members/{targetUserId}")]
+        public async Task<IActionResult> AddMember(int teamId, int targetUserId)
+        {
+            try
+            {
+                await _teamService.AddMemberAsync(teamId, targetUserId, GetUserId());
+                return Ok(new { message = "Thêm thành viên thành công." });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{teamId}/members/{targetUserId}")]
+        public async Task<IActionResult> RemoveMember(int teamId, int targetUserId)
+        {
+            try
+            {
+                await _teamService.RemoveMemberAsync(teamId, targetUserId, GetUserId());
+                return Ok(new { message = "Xóa thành viên thành công." });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
+
+        [HttpPost("{teamId}/grant-leader/{targetUserId}")]
+        public async Task<IActionResult> GrantLeader(int teamId, int targetUserId)
+        {
+            try
+            {
+                await _teamService.GrantTeamLeaderAsync(teamId, targetUserId, GetUserId());
+                return Ok(new { message = "Trao quyền trưởng nhóm thành công." });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
         }
     }
 }
