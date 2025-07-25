@@ -1,7 +1,9 @@
 ﻿// TeamTaskManagementSystem/Services/ProjectService.cs
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Exceptions;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.IAuth_User;
+using TeamTaskManagementSystem.Interfaces.IProject;
+using TeamTaskManagementSystem.Interfaces.ITeam;
 
 namespace TeamTaskManagementSystem.Services
 {

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Exceptions;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.IProject;
 
 namespace TeamTaskManagementSystem.Controllers
 {

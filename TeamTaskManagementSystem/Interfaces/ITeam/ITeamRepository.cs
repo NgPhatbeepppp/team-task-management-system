@@ -1,7 +1,9 @@
 ﻿// TeamTaskManagementSystem/Interfaces/ITeamRepository.cs
+
+// TeamTaskManagementSystem/Interfaces/ITeamRepository.cs
 using TeamTaskManagementSystem.Entities;
 
-namespace TeamTaskManagementSystem.Interfaces
+namespace TeamTaskManagementSystem.Interfaces.ITeam
 {
     public interface ITeamRepository
     {
@@ -10,7 +12,8 @@ namespace TeamTaskManagementSystem.Interfaces
         Task<Team?> GetByIdWithProjectsAsync(int teamId);
         Task<Team?> GetByIdWithMembersAsync(int teamId);
 
-        // <<< GHI CHÚ: Đơn giản hóa, repository chỉ có nhiệm vụ thêm thực thể vào DbContext.
+        Task<IEnumerable<Team>> GetTeamsByUserIdAsync(int userId);
+
         Task AddAsync(Team team);
         void Update(Team team);
         void Delete(Team team);

@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using TeamTaskManagementSystem.Data;
 using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.ITeam;
 
 namespace TeamTaskManagementSystem.Repositories
 {
@@ -19,6 +19,22 @@ namespace TeamTaskManagementSystem.Repositories
         public async Task AddAsync(Team team)
         {
             await _context.Teams.AddAsync(team);
+        }
+
+        public async Task<IEnumerable<Team>> GetTeamsByUserIdAsync(int userId)
+        {
+            
+            var teamIds = await _context.TeamMembers
+                .Where(tm => tm.UserId == userId)
+                .Select(tm => tm.TeamId)
+                .ToListAsync();
+
+            
+            return await _context.Teams
+                .Where(t => teamIds.Contains(t.Id))
+                .Include(t => t.Members) 
+                .ThenInclude(tm => tm.User) 
+                .ToListAsync();
         }
 
         public void Delete(Team team) => _context.Teams.Remove(team);

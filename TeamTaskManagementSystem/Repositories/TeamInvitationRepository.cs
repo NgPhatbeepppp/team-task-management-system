@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using TeamTaskManagementSystem.Data;
 using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.Iinvitation;
 
 namespace TeamTaskManagementSystem.Repositories
 {

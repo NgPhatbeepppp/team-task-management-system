@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Exceptions;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.ITeam;
 
 namespace TeamTaskManagementSystem.Controllers
 {
@@ -21,6 +21,13 @@ namespace TeamTaskManagementSystem.Controllers
         }
 
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        [HttpGet("mine")]
+        public async Task<IActionResult> GetMyTeams()
+        {
+            var teams = await _teamService.GetTeamsByUserIdAsync(GetUserId());
+            return Ok(teams);
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()

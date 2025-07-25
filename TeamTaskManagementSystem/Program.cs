@@ -8,6 +8,11 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
+using TeamTaskManagementSystem.Interfaces.IAuth_User;
+using TeamTaskManagementSystem.Interfaces.ITask_CheckList;
+using TeamTaskManagementSystem.Interfaces.IProject;
+using TeamTaskManagementSystem.Interfaces.Iinvitation;
+using TeamTaskManagementSystem.Interfaces.ITeam;
 
 // ===================================================================
 // (Đăng ký tất cả services)

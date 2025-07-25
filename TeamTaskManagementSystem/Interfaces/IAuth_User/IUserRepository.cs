@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using TeamTaskManagementSystem.Entities;
 
-namespace TeamTaskManagementSystem.Interfaces
+namespace TeamTaskManagementSystem.Interfaces.IAuth_User
 {
     public interface IUserRepository
     {

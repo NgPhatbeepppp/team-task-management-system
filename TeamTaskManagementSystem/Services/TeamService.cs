@@ -1,7 +1,8 @@
 ﻿// TeamTaskManagementSystem/Services/TeamService.cs
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Exceptions;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.IProject;
+using TeamTaskManagementSystem.Interfaces.ITeam;
 
 namespace TeamTaskManagementSystem.Services
 {
@@ -16,7 +17,11 @@ namespace TeamTaskManagementSystem.Services
             _projectService = projectService;
         }
 
-        // <<< GHI CHÚ: Toàn bộ logic tạo team và gán leader được đưa về đây.
+        public async Task<IEnumerable<Team>> GetTeamsByUserIdAsync(int userId)
+        {
+            return await _teamRepository.GetTeamsByUserIdAsync(userId);
+        }
+        
         public async Task CreateTeamAsync(Team team, int creatorUserId)
         {
             team.CreatedByUserId = creatorUserId;

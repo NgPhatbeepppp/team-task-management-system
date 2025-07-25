@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.IAuth_User;
 using TeamTaskManagementSystem.ViewModels;
 
 namespace TeamTaskManagementSystem.Controllers

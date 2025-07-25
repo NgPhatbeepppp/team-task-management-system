@@ -1,7 +1,7 @@
 ﻿using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Interfaces;
 using TeamTaskManagementSystem.Data;
 using Microsoft.EntityFrameworkCore;
+using TeamTaskManagementSystem.Interfaces.IAuth_User;
 
 namespace TeamTaskManagementSystem.Repositories
 {

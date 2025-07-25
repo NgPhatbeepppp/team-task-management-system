@@ -1,6 +1,6 @@
 ﻿using TeamTaskManagementSystem.Entities;
 
-namespace TeamTaskManagementSystem.Interfaces
+namespace TeamTaskManagementSystem.Interfaces.IProject
 {
     public interface IProjectRepository
     {
