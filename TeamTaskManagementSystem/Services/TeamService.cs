@@ -87,7 +87,7 @@ namespace TeamTaskManagementSystem.Services
             await _teamRepository.SaveChangesAsync();
         }
 
-        // <<< GHI CHÚ: Xóa phương thức bị trùng lặp.
+        
         public async Task LeaveAllProjectsAsync(int teamId, int userId)
         {
             var team = await _teamRepository.GetByIdWithProjectsAsync(teamId);
@@ -129,35 +129,69 @@ namespace TeamTaskManagementSystem.Services
 
         public async Task RemoveMemberAsync(int teamId, int targetUserId, int actorUserId)
         {
-            if (!await _teamRepository.IsTeamLeaderAsync(teamId, actorUserId))
-            {
-                throw new UnauthorizedAccessException("Chỉ trưởng nhóm mới có quyền xóa thành viên.");
-            }
-
-            var member = await _teamRepository.GetTeamMemberAsync(teamId, targetUserId);
-            if (member == null)
+            // Kiểm tra xem thành viên mục tiêu có tồn tại trong nhóm không
+            var memberToRemove = await _teamRepository.GetTeamMemberAsync(teamId, targetUserId);
+            if (memberToRemove == null)
             {
                 throw new NotFoundException("Không tìm thấy thành viên trong team.");
             }
 
-            await _teamRepository.RemoveMemberAsync(member);
+            // Lấy thông tin vai trò của người thực hiện hành động
+            bool isActorLeader = await _teamRepository.IsTeamLeaderAsync(teamId, actorUserId);
+            bool isSelfRemoval = (actorUserId == targetUserId);
+
+            // Áp dụng logic kiểm tra quyền mới:
+            // Hành động hợp lệ nếu:
+            // 1. Người thực hiện là Trưởng nhóm.
+            // 2. Hoặc người thực hiện đang tự xóa chính mình (rời nhóm).
+            if (!isActorLeader && !isSelfRemoval)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền thực hiện hành động này.");
+            }
+
+            // Logic bổ sung: Ngăn trưởng nhóm cuối cùng rời khỏi nhóm
+            if (isSelfRemoval && memberToRemove.RoleInTeam == "TeamLeader")
+            {
+                var leaders = await _teamRepository.GetTeamLeadersAsync(teamId);
+                if (leaders.Count() <= 1)
+                {
+                    throw new InvalidOperationException("Bạn là trưởng nhóm cuối cùng. Vui lòng trao quyền cho người khác trước khi rời nhóm.");
+                }
+            }
+
+            // Nếu tất cả kiểm tra đều qua, tiến hành xóa
+            await _teamRepository.RemoveMemberAsync(memberToRemove);
             await _teamRepository.SaveChangesAsync();
         }
 
         public async Task GrantTeamLeaderAsync(int teamId, int targetUserId, int actorUserId)
         {
-            if (!await _teamRepository.IsTeamLeaderAsync(teamId, actorUserId))
+            // 1. Kiểm tra quyền của người thực hiện
+            var actor = await _teamRepository.GetTeamMemberAsync(teamId, actorUserId);
+            if (actor == null || actor.RoleInTeam != "TeamLeader")
             {
                 throw new UnauthorizedAccessException("Chỉ trưởng nhóm mới có thể chuyển quyền.");
             }
 
-            var member = await _teamRepository.GetTeamMemberAsync(teamId, targetUserId);
-            if (member == null)
+            // 2. Kiểm tra người được trao quyền
+            var targetMember = await _teamRepository.GetTeamMemberAsync(teamId, targetUserId);
+            if (targetMember == null)
             {
                 throw new NotFoundException("Thành viên không tồn tại trong team để trao quyền.");
             }
+            if (targetMember.UserId == actorUserId)
+            {
+                throw new InvalidOperationException("Bạn đã là trưởng nhóm rồi.");
+            }
 
-            member.RoleInTeam = "TeamLeader";
+            // 3. Hạ quyền của trưởng nhóm hiện tại (người thực hiện)
+            actor.RoleInTeam = "Member";
+
+            // 4. Nâng quyền cho thành viên mục tiêu
+            targetMember.RoleInTeam = "TeamLeader";
+
+            // 5. Lưu tất cả thay đổi vào CSDL
+            // SaveChangesAsync sẽ tự động lưu cả 2 sự thay đổi trên trong một transaction
             await _teamRepository.SaveChangesAsync();
         }
     }

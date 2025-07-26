@@ -36,7 +36,12 @@ namespace TeamTaskManagementSystem.Repositories
                 .ThenInclude(tm => tm.User) 
                 .ToListAsync();
         }
-
+        public async Task<IEnumerable<TeamMember>> GetTeamLeadersAsync(int teamId)
+        {
+            return await _context.TeamMembers
+                .Where(tm => tm.TeamId == teamId && tm.RoleInTeam == "TeamLeader")
+                .ToListAsync();
+        }
         public void Delete(Team team) => _context.Teams.Remove(team);
 
         public async Task<IEnumerable<Team>> GetAllAsync() => await _context.Teams.Include(t => t.Members).ThenInclude(tm => tm.User).ToListAsync();

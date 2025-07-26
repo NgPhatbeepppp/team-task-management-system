@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TeamTaskManagementSystem.DTOs;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Interfaces.IAuth_User;
 using TeamTaskManagementSystem.ViewModels;
@@ -22,10 +23,30 @@ namespace TeamTaskManagementSystem.Controllers
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         [HttpGet("me")]
-        public async Task<ActionResult<UserProfile?>> GetMyProfile()
+        public async Task<ActionResult<CurrentUserDto>> GetMyProfile()
         {
-            var profile = await _userRepository.GetUserProfileByUserIdAsync(GetUserId());
-            return Ok(profile);
+            var userId = GetUserId();
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                return Unauthorized(); // Nếu không tìm thấy user từ token, có lỗi xác thực
+            }
+
+            var profile = await _userRepository.GetUserProfileByUserIdAsync(userId);
+
+            // Tạo DTO để trả về cho Frontend
+            var currentUserDto = new CurrentUserDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Role = user.Role,
+                FullName = profile?.FullName,
+                AvatarUrl = profile?.AvatarUrl,
+                JobTitle = profile?.JobTitle
+            };
+
+            return Ok(currentUserDto);
         }
 
         [HttpPut("me")]
@@ -34,7 +55,8 @@ namespace TeamTaskManagementSystem.Controllers
             var profile = await _userRepository.GetUserProfileByUserIdAsync(GetUserId());
             if (profile == null)
             {
-                profile = new UserProfile { UserId = GetUserId() };
+                // Nếu chưa có profile, tạo mới
+                profile = new Entities.UserProfile { UserId = GetUserId() };
                 await _userRepository.AddUserProfileAsync(profile);
             }
 
