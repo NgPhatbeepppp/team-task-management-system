@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TeamTaskManagementSystem.Data;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.ITeam;
 
 namespace TeamTaskManagementSystem.Repositories
 {

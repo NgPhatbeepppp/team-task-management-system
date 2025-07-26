@@ -1,7 +1,9 @@
 ﻿// TeamTaskManagementSystem/Services/InvitationService.cs
 
 using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.Iinvitation;
+using TeamTaskManagementSystem.Interfaces.IProject;
+using TeamTaskManagementSystem.Interfaces.ITeam;
 
 namespace TeamTaskManagementSystem.Services
 {

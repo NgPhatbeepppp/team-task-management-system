@@ -1,7 +1,9 @@
 ﻿// TeamTaskManagementSystem/Interfaces/IProjectTeamRepository.cs
+
+// TeamTaskManagementSystem/Interfaces/IProjectTeamRepository.cs
 using TeamTaskManagementSystem.Entities;
 
-namespace TeamTaskManagementSystem.Interfaces
+namespace TeamTaskManagementSystem.Interfaces.IProject
 {
     public interface IProjectTeamRepository
     {

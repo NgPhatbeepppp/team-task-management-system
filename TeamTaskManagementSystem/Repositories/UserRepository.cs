@@ -1,7 +1,7 @@
 ﻿using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Interfaces;
 using TeamTaskManagementSystem.Data;
 using Microsoft.EntityFrameworkCore;
+using TeamTaskManagementSystem.Interfaces.IAuth_User;
 
 namespace TeamTaskManagementSystem.Repositories
 {
@@ -66,6 +66,18 @@ namespace TeamTaskManagementSystem.Repositories
         public async Task<UserProfile?> GetUserProfileByUserIdAsync(int userId)
         {
             return await _context.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        }
+        public async Task<IEnumerable<User>> SearchUsersAsync(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return Enumerable.Empty<User>();
+            }
+            var lowerCaseQuery = query.ToLower();
+            return await _context.Users
+                .Where(u => u.Username.ToLower().Contains(lowerCaseQuery) || u.Email.ToLower().Contains(lowerCaseQuery))
+                .Take(5) // Giới hạn 5 kết quả để tối ưu hiệu năng
+                .ToListAsync();
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿// TeamTaskManagementSystem/Interfaces/IProjectService.cs
+
+// TeamTaskManagementSystem/Interfaces/IProjectService.cs
 using TeamTaskManagementSystem.Entities;
 
-namespace TeamTaskManagementSystem.Interfaces
+namespace TeamTaskManagementSystem.Interfaces.IProject
 {
     public interface IProjectService
     {

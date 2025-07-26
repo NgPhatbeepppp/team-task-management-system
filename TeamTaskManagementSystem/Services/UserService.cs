@@ -1,5 +1,5 @@
 ﻿using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.IAuth_User;
 
 namespace TeamTaskManagementSystem.Services
 {
@@ -40,6 +40,10 @@ namespace TeamTaskManagementSystem.Services
             if (existing == null) return false;
             _repo.Delete(existing);
             return await _repo.SaveChangesAsync();
+        }
+        public async Task<IEnumerable<User>> SearchUsersAsync(string query)
+        {
+            return await _repo.SearchUsersAsync(query);
         }
     }
 }

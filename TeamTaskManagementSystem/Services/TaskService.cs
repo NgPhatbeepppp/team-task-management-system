@@ -1,5 +1,6 @@
 ﻿using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.IProject;
+using TeamTaskManagementSystem.Interfaces.ITask_CheckList;
 
 namespace TeamTaskManagementSystem.Services
 {

@@ -1,6 +1,6 @@
 ﻿using TeamTaskManagementSystem.Entities;
 
-namespace TeamTaskManagementSystem.Interfaces
+namespace TeamTaskManagementSystem.Interfaces.IAuth_User
 {
     public interface IUserService
     {
@@ -9,5 +9,7 @@ namespace TeamTaskManagementSystem.Interfaces
         Task<bool> CreateUserAsync(User user);
         Task<bool> UpdateUserAsync(User user);
         Task<bool> DeleteUserAsync(int id);
+
+        Task<IEnumerable<User>> SearchUsersAsync(string query);
     }
 }

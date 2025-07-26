@@ -1,4 +1,4 @@
-﻿namespace TeamTaskManagementSystem.Interfaces
+﻿namespace TeamTaskManagementSystem.Interfaces.ITeam
 {
     public interface ITeamMemberRepository
     {
