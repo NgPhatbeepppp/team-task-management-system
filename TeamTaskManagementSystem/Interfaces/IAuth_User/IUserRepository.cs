@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using TeamTaskManagementSystem.Entities;
 
-namespace TeamTaskManagementSystem.Interfaces
+namespace TeamTaskManagementSystem.Interfaces.IAuth_User
 {
     public interface IUserRepository
     {
@@ -25,5 +25,8 @@ namespace TeamTaskManagementSystem.Interfaces
         Task AddUserProfileAsync(UserProfile profile);
         // Quản lý hồ sơ
         Task<UserProfile?> GetUserProfileByUserIdAsync(int userId);
+
+        Task<IEnumerable<User>> SearchUsersAsync(string query);
+
     }
 }

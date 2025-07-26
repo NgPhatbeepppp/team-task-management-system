@@ -114,7 +114,13 @@ namespace TeamTaskManagementSystem.Data
                 .HasOne(c => c.Task).WithMany(t => t.Comments).HasForeignKey(c => c.TaskId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Comment>()
                 .HasOne(c => c.User).WithMany(u => u.Comments).HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
-            // Thêm đoạn này vào trong hàm OnModelCreating
+            // 7.Khi một Team bị xóa, tự động xóa các ProjectInvitation liên quan đến Team đó.
+            modelBuilder.Entity<ProjectInvitation>()
+               .HasOne(pi => pi.InvitedTeam)
+               .WithMany()
+               .HasForeignKey(pi => pi.InvitedTeamId)
+               .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<TeamInvitation>()
                 .HasOne(ti => ti.InvitedUser)
                 .WithMany()

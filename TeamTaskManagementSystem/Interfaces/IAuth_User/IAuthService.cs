@@ -1,6 +1,6 @@
 ﻿using TeamTaskManagementSystem.ViewModels;
 
-namespace TeamTaskManagementSystem.Interfaces
+namespace TeamTaskManagementSystem.Interfaces.IAuth_User
 {
     public interface IAuthService
     {

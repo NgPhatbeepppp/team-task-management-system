@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TeamTaskManagementSystem.Data;
 using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.ITask_CheckList;
 
 namespace TeamTaskManagementSystem.Repositories
 {

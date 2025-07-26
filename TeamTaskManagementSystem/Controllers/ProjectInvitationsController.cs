@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Dtos.ProjectInvitations;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.Iinvitation;
+using TeamTaskManagementSystem.Interfaces.IProject;
 
 namespace TeamTaskManagementSystem.Controllers
 {

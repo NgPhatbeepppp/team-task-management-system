@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿// TeamTaskManagementSystem/Entities/Team.cs
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 namespace TeamTaskManagementSystem.Entities
 {
@@ -17,12 +18,13 @@ namespace TeamTaskManagementSystem.Entities
 
         // Foreign Key
         public int CreatedByUserId { get; set; }
-        [JsonIgnore]        
+
+        // <<< GHI CHÚ: Thêm JsonIgnore để nhất quán, tránh việc serialize thông tin không cần thiết ra client.
+        [JsonIgnore]
         public virtual User? CreatedByUser { get; set; }
 
-        // --- SỬA LỖI Ở ĐÂY ---
         // Một nhóm có nhiều thành viên
-        [JsonIgnore]
+        [JsonPropertyName("teamMembers")]
         public virtual ICollection<TeamMember> Members { get; set; } = new List<TeamMember>();
 
         // Một nhóm tham gia nhiều dự án thông qua bảng nối ProjectTeam

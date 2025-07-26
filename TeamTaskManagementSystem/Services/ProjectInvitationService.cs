@@ -1,5 +1,6 @@
 ﻿using TeamTaskManagementSystem.Entities;
-using TeamTaskManagementSystem.Interfaces;
+using TeamTaskManagementSystem.Interfaces.IAuth_User;
+using TeamTaskManagementSystem.Interfaces.Iinvitation;
 
 namespace TeamTaskManagementSystem.Services
 {

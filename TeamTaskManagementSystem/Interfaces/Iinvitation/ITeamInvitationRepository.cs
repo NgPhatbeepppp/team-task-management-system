@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using TeamTaskManagementSystem.Entities;
 
-namespace TeamTaskManagementSystem.Interfaces
+namespace TeamTaskManagementSystem.Interfaces.Iinvitation
 {
     public interface ITeamInvitationRepository
     {
@@ -10,5 +10,6 @@ namespace TeamTaskManagementSystem.Interfaces
         Task<TeamInvitation?> GetByIdAsync(int invitationId);
         Task<bool> SaveChangesAsync();
         void Update(TeamInvitation invitation);
+        Task<IEnumerable<TeamInvitation>> GetPendingInvitationsForUsersAsync(int teamId, List<int> userIds);
     }
 }

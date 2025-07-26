@@ -1,6 +1,5 @@
 ﻿// Controllers/AuthController.cs
 using Microsoft.AspNetCore.Mvc;
-using TeamTaskManagementSystem.Interfaces;
 using TeamTaskManagementSystem.ViewModels;
 using TeamTaskManagementSystem.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -8,7 +7,11 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+
+using TeamTaskManagementSystem.Interfaces.IAuth_User;
+
 using System.Linq;
+
 
 namespace TeamTaskManagementSystem.Controllers
 {
