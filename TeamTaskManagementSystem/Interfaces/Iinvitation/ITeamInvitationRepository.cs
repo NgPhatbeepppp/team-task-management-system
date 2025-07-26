@@ -10,5 +10,6 @@ namespace TeamTaskManagementSystem.Interfaces.Iinvitation
         Task<TeamInvitation?> GetByIdAsync(int invitationId);
         Task<bool> SaveChangesAsync();
         void Update(TeamInvitation invitation);
+        Task<IEnumerable<TeamInvitation>> GetPendingInvitationsForUsersAsync(int teamId, List<int> userIds);
     }
 }

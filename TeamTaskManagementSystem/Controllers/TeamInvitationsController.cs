@@ -1,13 +1,19 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
+using TeamTaskManagementSystem.DTOs.TeamInvitation;
 using TeamTaskManagementSystem.Interfaces;
 
-namespace TeamTaskManagementSystem .Controllers
+namespace TeamTaskManagementSystem.Controllers
 {
-    // === CONTROLLER ĐỂ GỬI LỜI MỜI ===
+    // =================================================================
+    // CONTROLLER NÀY QUẢN LÝ VIỆC MỜI VÀ TÌM KIẾM CHO MỘT TEAM CỤ THỂ
+    // =================================================================
     [ApiController]
-    [Route("api/teams/{teamId}/invitations")]
+    [Route("api/team/{teamId}/invitations")] 
     [Authorize]
     public class TeamInvitationsController : ControllerBase
     {
@@ -20,27 +26,36 @@ namespace TeamTaskManagementSystem .Controllers
 
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        /// <summary>
-        /// Mời một người dùng tham gia vào nhóm (chỉ TeamLeader có thể thực hiện).
-        /// </summary>
-        /// <param name="teamId">ID của nhóm muốn mời vào.</param>
-        /// <param name="targetUserId">ID của người dùng được mời.</param>
+        // POST /api/team/{teamId}/invitations
         [HttpPost]
-        public async Task<IActionResult> InviteUserToTeam(int teamId, [FromBody] int targetUserId)
+        public async Task<IActionResult> InviteUserToTeam(int teamId, [FromBody] InviteUserRequestDto request)
         {
             var inviterId = GetUserId();
-            var success = await _invitationService.InviteUserToTeamAsync(teamId, targetUserId, inviterId);
+            var success = await _invitationService.InviteUserToTeamAsync(teamId, request.TargetUserId, inviterId);
 
             if (!success)
             {
                 return BadRequest("Không thể gửi lời mời. Người dùng có thể đã là thành viên hoặc đã có lời mời đang chờ.");
             }
-
             return Ok("Đã gửi lời mời thành công.");
+        }
+
+        // GET /api/team/{teamId}/invitations/search-users
+        [HttpGet("search-users")]
+        public async Task<ActionResult<IEnumerable<UserSearchResponseDto>>> SearchUsers(int teamId, [FromQuery] string query)
+        {
+            if (string.IsNullOrEmpty(query) || query.Length < 2)
+            {
+                return Ok(Enumerable.Empty<UserSearchResponseDto>());
+            }
+            var users = await _invitationService.SearchUsersForInvitationAsync(teamId, query);
+            return Ok(users);
         }
     }
 
-    // === CONTROLLER ĐỂ XỬ LÝ (CHẤP NHẬN/TỪ CHỐI) LỜI MỜI ===
+    // =================================================================
+    // CONTROLLER NÀY XỬ LÝ CÁC LỜI MỜI ĐÃ TỒN TẠI (CHUNG)
+    // =================================================================
     [ApiController]
     [Route("api/team-invitations")]
     [Authorize]
@@ -55,9 +70,7 @@ namespace TeamTaskManagementSystem .Controllers
 
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        /// <summary>
-        /// Người dùng được mời chấp nhận lời mời tham gia nhóm.
-        /// </summary>
+        // POST /api/team-invitations/{invitationId}/accept
         [HttpPost("{invitationId}/accept")]
         public async Task<IActionResult> Accept(int invitationId)
         {
@@ -66,9 +79,7 @@ namespace TeamTaskManagementSystem .Controllers
             return Ok("Đã chấp nhận lời mời và tham gia vào nhóm.");
         }
 
-        /// <summary>
-        /// Người dùng được mời từ chối lời mời tham gia nhóm.
-        /// </summary>
+        // POST /api/team-invitations/{invitationId}/reject
         [HttpPost("{invitationId}/reject")]
         public async Task<IActionResult> Reject(int invitationId)
         {

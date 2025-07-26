@@ -35,7 +35,13 @@ namespace TeamTaskManagementSystem.Repositories
         {
             _context.TeamInvitations.Update(invitation);
         }
-
+       
+        public async Task<IEnumerable<TeamInvitation>> GetPendingInvitationsForUsersAsync(int teamId, List<int> userIds)
+        {
+            return await _context.TeamInvitations
+                .Where(i => i.TeamId == teamId && i.Status == "Pending" && userIds.Contains(i.InvitedUserId))
+                .ToListAsync();
+        }
         public async Task<bool> SaveChangesAsync()
         {
             return await _context.SaveChangesAsync() > 0;

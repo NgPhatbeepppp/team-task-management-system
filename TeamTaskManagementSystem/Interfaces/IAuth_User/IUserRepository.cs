@@ -18,5 +18,8 @@ namespace TeamTaskManagementSystem.Interfaces.IAuth_User
         Task AddUserProfileAsync(UserProfile profile);
         // Quản lý hồ sơ
         Task<UserProfile?> GetUserProfileByUserIdAsync(int userId);
+
+        Task<IEnumerable<User>> SearchUsersAsync(string query);
+
     }
 }

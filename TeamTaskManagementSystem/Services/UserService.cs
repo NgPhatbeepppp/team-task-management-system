@@ -41,5 +41,9 @@ namespace TeamTaskManagementSystem.Services
             _repo.Delete(existing);
             return await _repo.SaveChangesAsync();
         }
+        public async Task<IEnumerable<User>> SearchUsersAsync(string query)
+        {
+            return await _repo.SearchUsersAsync(query);
+        }
     }
 }

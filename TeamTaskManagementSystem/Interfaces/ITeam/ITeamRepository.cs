@@ -22,6 +22,7 @@ namespace TeamTaskManagementSystem.Interfaces.ITeam
         Task<bool> IsTeamLeaderAsync(int teamId, int userId);
         Task<bool> IsMemberAsync(int teamId, int userId);
 
+        Task<IEnumerable<TeamMember>> GetTeamMembersByUserIdsAsync(int teamId, List<int> userIds);
         Task<IEnumerable<TeamMember>> GetTeamLeadersAsync(int teamId);
         Task AddMemberAsync(TeamMember member);
         Task RemoveMemberAsync(TeamMember member);

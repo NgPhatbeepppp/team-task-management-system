@@ -9,5 +9,7 @@ namespace TeamTaskManagementSystem.Interfaces.IAuth_User
         Task<bool> CreateUserAsync(User user);
         Task<bool> UpdateUserAsync(User user);
         Task<bool> DeleteUserAsync(int id);
+
+        Task<IEnumerable<User>> SearchUsersAsync(string query);
     }
 }

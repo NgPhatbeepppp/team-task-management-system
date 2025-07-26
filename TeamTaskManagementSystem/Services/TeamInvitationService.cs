@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using TeamTaskManagementSystem.Interfaces.IAuth_User;
 using TeamTaskManagementSystem.Interfaces.Iinvitation;
 using TeamTaskManagementSystem.Interfaces.ITeam;
+using TeamTaskManagementSystem.DTOs.TeamInvitation;
 
 namespace TeamTaskManagementSystem.Services
 {
@@ -82,6 +83,38 @@ namespace TeamTaskManagementSystem.Services
             _invitationRepo.Update(invitation);
 
             return await _invitationRepo.SaveChangesAsync();
+        }
+        // ✨ TRIỂN KHAI LOGIC TÌM KIẾM VÀ KIỂM TRA TRẠNG THÁI
+        public async Task<IEnumerable<UserSearchResponseDto>> SearchUsersForInvitationAsync(int teamId, string query)
+        {
+            // 1. Tìm kiếm user theo query
+            var foundUsers = await _userRepo.SearchUsersAsync(query);
+            if (!foundUsers.Any())
+            {
+                return Enumerable.Empty<UserSearchResponseDto>();
+            }
+
+            var userIds = foundUsers.Select(u => u.Id).ToList();
+
+            // 2. Lấy thông tin thành viên và lời mời đang chờ của những user này cho team cụ thể
+            var teamMembers = await _teamRepo.GetTeamMembersByUserIdsAsync(teamId, userIds);
+            var pendingInvitations = await _invitationRepo.GetPendingInvitationsForUsersAsync(teamId, userIds);
+
+            var memberUserIds = new HashSet<int>(teamMembers.Select(m => m.UserId));
+            var pendingUserIds = new HashSet<int>(pendingInvitations.Select(i => i.InvitedUserId));
+
+            // 3. Xây dựng kết quả trả về
+            var results = foundUsers.Select(user => new UserSearchResponseDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                StatusInTeam = memberUserIds.Contains(user.Id) ? "Member"
+                             : pendingUserIds.Contains(user.Id) ? "Pending"
+                             : "NotInvited"
+            }).ToList();
+
+            return results;
         }
     }
 }

@@ -90,7 +90,13 @@ namespace TeamTaskManagementSystem.Repositories
         {
             return await _context.TeamMembers.FirstOrDefaultAsync(tm => tm.TeamId == teamId && tm.UserId == userId);
         }
-
+        
+        public async Task<IEnumerable<TeamMember>> GetTeamMembersByUserIdsAsync(int teamId, List<int> userIds)
+        {
+            return await _context.TeamMembers
+                .Where(tm => tm.TeamId == teamId && userIds.Contains(tm.UserId))
+                .ToListAsync();
+        }
         public async Task<bool> SaveChangesAsync() => await _context.SaveChangesAsync() > 0;
 
         public void Update(Team team) => _context.Teams.Update(team);

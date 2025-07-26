@@ -67,5 +67,17 @@ namespace TeamTaskManagementSystem.Repositories
         {
             return await _context.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
         }
+        public async Task<IEnumerable<User>> SearchUsersAsync(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return Enumerable.Empty<User>();
+            }
+            var lowerCaseQuery = query.ToLower();
+            return await _context.Users
+                .Where(u => u.Username.ToLower().Contains(lowerCaseQuery) || u.Email.ToLower().Contains(lowerCaseQuery))
+                .Take(5) // Giới hạn 5 kết quả để tối ưu hiệu năng
+                .ToListAsync();
+        }
     }
 }
