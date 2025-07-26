@@ -13,7 +13,17 @@ namespace TeamTaskManagementSystem.Repositories
         {
             _context = context;
         }
-
+        public async Task<IEnumerable<ProjectInvitation>> GetPendingInvitationsForUserAsync(int userId, List<int> teamIds)
+        {
+            return await _context.ProjectInvitations
+                .Include(i => i.Project)
+                .Include(i => i.InvitedByUser)
+                .Include(i => i.InvitedTeam)
+                .Where(i => i.Status == "Pending" &&
+                            (i.InvitedUserId == userId || (i.InvitedTeamId.HasValue && teamIds.Contains(i.InvitedTeamId.Value))))
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync();
+        }
         public async Task<bool> InvitationExistsAsync(int projectId, int? invitedUserId, int? invitedTeamId)
         {
             return await _context.ProjectInvitations.AnyAsync(i =>
