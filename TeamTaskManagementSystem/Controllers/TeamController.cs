@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TeamTaskManagementSystem.DTOs;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Exceptions;
 using TeamTaskManagementSystem.Interfaces.ITeam;
@@ -50,13 +51,28 @@ namespace TeamTaskManagementSystem.Controllers
             }
         }
 
-        // <<< GHI CHÚ: Hoàn toàn làm lại theo pattern try-catch.
+
         [HttpPost]
-        public async Task<IActionResult> Create(Team team)
+        public async Task<IActionResult> Create([FromBody] TeamCreateDto teamDto) // <-- Thay đổi ở đây
         {
+            // Kiểm tra tính hợp lệ của DTO
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
+                // Chuyển đổi (map) từ DTO sang Entity
+                var team = new Team
+                {
+                    Name = teamDto.Name,
+                    Description = teamDto.Description
+                };
+
                 await _teamService.CreateTeamAsync(team, GetUserId());
+
+                // Trả về đối tượng team hoàn chỉnh (bao gồm cả KeyCode đã được sinh ra)
                 return CreatedAtAction(nameof(GetById), new { id = team.Id }, team);
             }
             catch (Exception ex)

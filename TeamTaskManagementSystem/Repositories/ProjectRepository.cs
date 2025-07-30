@@ -28,7 +28,13 @@ namespace TeamTaskManagementSystem.Repositories
 
         public async Task<Project?> GetByIdAsync(int id)
         {
-            return await _context.Projects.FindAsync(id);
+                        return await _context.Projects
+                .Include(p => p.Members) // Nạp danh sách ProjectMembers
+                    .ThenInclude(pm => pm.User) // Từ ProjectMembers, nạp thông tin User
+                        .ThenInclude(u => u.UserProfile) // Từ User, nạp UserProfile
+                .Include(p => p.Teams) // Nạp danh sách ProjectTeams
+                    .ThenInclude(pt => pt.Team) // Từ ProjectTeams, nạp thông tin Team
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task AddAsync(Project project)

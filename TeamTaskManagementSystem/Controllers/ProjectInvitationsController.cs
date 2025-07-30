@@ -50,8 +50,8 @@ namespace TeamTaskManagementSystem.Controllers
             }
             // ------------------------------------
 
-            var success = await _invitationService.InviteTeamAsync(projectId, dto.InvitedTeamId, GetUserId());
-            return success ? Ok("Đã gửi lời mời tới nhóm.") : BadRequest("Gửi lời mời thất bại hoặc lời mời đã tồn tại.");
+            var success = await _invitationService.InviteTeamAsync(projectId, dto.TeamKeyCode, GetUserId());
+            return success ? Ok("Đã gửi lời mời tới nhóm.") : BadRequest("Gửi lời mời thất bại, team không tồn tại hoặc lời mời đã tồn tại.");
         }
     }
 }

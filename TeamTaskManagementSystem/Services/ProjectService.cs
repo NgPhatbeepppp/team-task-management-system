@@ -16,12 +16,13 @@ namespace TeamTaskManagementSystem.Services
         // <<< GHI CHÚ: Inject thêm IUserRepository để kiểm tra người dùng có tồn tại không.
         private readonly IUserRepository _userRepository;
 
+
         public ProjectService(
             IProjectRepository projectRepository,
             ITeamRepository teamRepository,
             IProjectTeamRepository projectTeamRepository,
             IProjectMemberRepository projectMemberRepository,
-            IUserRepository userRepository) // Thêm vào constructor
+            IUserRepository userRepository) 
         {
             _projectRepository = projectRepository;
             _teamRepository = teamRepository;
@@ -29,8 +30,15 @@ namespace TeamTaskManagementSystem.Services
             _projectMemberRepository = projectMemberRepository;
             _userRepository = userRepository; // Gán repo
         }
+        private static string GenerateUniqueKeyCode(string prefix)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
+            var randomPart = new string(Enumerable.Repeat(chars, 4) // Tạo 4 ký tự ngẫu nhiên
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+            return $"{prefix}-{randomPart}";
+        }
 
-        // ... (các phương thức khác giữ nguyên) ...
 
         // <<< GHI CHÚ: Triển khai phương thức mới với đầy đủ logic nghiệp vụ.
         public async Task AddMemberToProjectAsync(int projectId, int targetUserId, int actorUserId)
@@ -86,6 +94,7 @@ namespace TeamTaskManagementSystem.Services
         public async Task CreateProjectAsync(Project project, int creatorUserId)
         {
             project.CreatedByUserId = creatorUserId;
+            project.KeyCode = GenerateUniqueKeyCode("PROJ");
             project.CreatedAt = DateTime.UtcNow;
 
             project.Members.Add(new ProjectMember
