@@ -118,8 +118,9 @@ namespace TeamTaskManagementSystem.Controllers
         {
             try
             {
-                var project = await _service.GetByIdAsync(id);
-                return Ok(project);
+                // Gọi phương thức mới để lấy DTO
+                var projectDto = await _service.GetProjectDetailsByIdAsync(id);
+                return Ok(projectDto); // Trả về DTO thay vì Entity
             }
             catch (NotFoundException ex)
             {

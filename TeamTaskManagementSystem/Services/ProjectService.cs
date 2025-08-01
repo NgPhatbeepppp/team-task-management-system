@@ -31,6 +31,42 @@ namespace TeamTaskManagementSystem.Services
             _projectMemberRepository = projectMemberRepository;
             _userRepository = userRepository; // Gán repo
         }
+        public async Task<ProjectDetailsDto> GetProjectDetailsByIdAsync(int id)
+        {
+            var project = await _projectRepository.GetByIdAsync(id);
+            if (project == null)
+            {
+                throw new NotFoundException($"Không tìm thấy dự án với ID {id}.");
+            }
+
+            var projectDto = new ProjectDetailsDto
+            {
+                Id = project.Id,
+                Name = project.Name,
+                Description = project.Description,
+                CreatedAt = project.CreatedAt,
+                CreatedByUserId = project.CreatedByUserId,
+                Members = project.Members.Select(pm => new ProjectMemberDto
+                {
+                    User = new UserDto
+                    {
+                        Id = pm.User.Id,
+                        Username = pm.User.Username,
+                        FullName = pm.User.UserProfile?.FullName
+                    },
+                    RoleInProject = pm.RoleInProject
+                }).ToList(),
+
+
+                Teams = project.Teams.Select(pt => new TeamDto
+                {
+                    Id = pt.Team.Id,
+                    Name = pt.Team.Name
+                }).ToList()
+            };
+
+            return projectDto;
+        }
         private static string GenerateUniqueKeyCode(string prefix)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -76,7 +112,7 @@ namespace TeamTaskManagementSystem.Services
             await _projectRepository.SaveChangesAsync(); // Lưu thay đổi
         }
 
-        // ... (các phương thức khác giữ nguyên) ...
+       
         public async Task<IEnumerable<Project>> GetProjectsOfUserAsync(int userId)
         {
             return await _projectRepository.GetProjectsOfUserAsync(userId);
