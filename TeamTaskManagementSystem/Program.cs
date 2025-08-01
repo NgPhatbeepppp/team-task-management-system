@@ -60,7 +60,8 @@ builder.Services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
 builder.Services.AddScoped<IProjectTeamRepository, ProjectTeamRepository>();
 builder.Services.AddScoped<IProjectInvitationRepository, ProjectInvitationRepository>();
 builder.Services.AddScoped<IProjectInvitationService, ProjectInvitationService>();
-
+builder.Services.AddScoped<IProjectStatusRepository, ProjectStatusRepository>();
+builder.Services.AddScoped<IProjectStatusService, ProjectStatusService>();
 // --- Invitation handling ---
 builder.Services.AddScoped<IInvitationService, InvitationService>();
 builder.Services.AddScoped<ITeamInvitationRepository, TeamInvitationRepository>();
