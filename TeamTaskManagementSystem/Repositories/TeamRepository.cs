@@ -36,6 +36,11 @@ namespace TeamTaskManagementSystem.Repositories
                 .ThenInclude(tm => tm.User) 
                 .ToListAsync();
         }
+        public async Task<Team?> GetByKeyCodeAsync(string keyCode)
+        {
+            return await _context.Teams
+                .FirstOrDefaultAsync(t => t.KeyCode == keyCode);
+        }
         public async Task<IEnumerable<TeamMember>> GetTeamLeadersAsync(int teamId)
         {
             return await _context.TeamMembers

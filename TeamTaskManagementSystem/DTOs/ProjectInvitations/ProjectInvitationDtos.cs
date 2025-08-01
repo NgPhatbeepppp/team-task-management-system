@@ -7,6 +7,6 @@
 
     public class InviteTeamDto
     {
-        public int InvitedTeamId { get; set; }
+        public string TeamKeyCode { get; set; }
     }
 }

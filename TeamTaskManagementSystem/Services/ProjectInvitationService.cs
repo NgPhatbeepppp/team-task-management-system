@@ -1,6 +1,7 @@
 ﻿using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Interfaces.IAuth_User;
 using TeamTaskManagementSystem.Interfaces.Iinvitation;
+using TeamTaskManagementSystem.Interfaces.ITeam;
 
 namespace TeamTaskManagementSystem.Services
 {
@@ -8,11 +9,16 @@ namespace TeamTaskManagementSystem.Services
     {
         private readonly IProjectInvitationRepository _invitationRepo;
         private readonly IUserRepository _userRepo;
+        private readonly ITeamRepository _teamRepo;
 
-        public ProjectInvitationService(IProjectInvitationRepository invitationRepo, IUserRepository userRepo)
+        public ProjectInvitationService(
+            IProjectInvitationRepository invitationRepo,
+            IUserRepository userRepo,
+            ITeamRepository teamRepo) 
         {
             _invitationRepo = invitationRepo;
             _userRepo = userRepo;
+            _teamRepo = teamRepo; 
         }
 
         public async Task<bool> InviteUserAsync(int projectId, string identifier, int invitedByUserId)
@@ -36,15 +42,21 @@ namespace TeamTaskManagementSystem.Services
             return true;
         }
 
-        public async Task<bool> InviteTeamAsync(int projectId, int invitedTeamId, int invitedByUserId)
+        public async Task<bool> InviteTeamAsync(int projectId, string teamKeyCode, int invitedByUserId)
         {
-            var exists = await _invitationRepo.InvitationExistsAsync(projectId, null, invitedTeamId);
+            // 1. Tìm team bằng KeyCode
+            var team = await _teamRepo.GetByKeyCodeAsync(teamKeyCode);
+            if (team == null) return false; // Không tìm thấy team
+
+            // 2. Kiểm tra xem lời mời đã tồn tại chưa (sử dụng team.Id)
+            var exists = await _invitationRepo.InvitationExistsAsync(projectId, null, team.Id);
             if (exists) return false;
 
+            // 3. Tạo lời mời với team.Id
             var invitation = new ProjectInvitation
             {
                 ProjectId = projectId,
-                InvitedTeamId = invitedTeamId,
+                InvitedTeamId = team.Id, // Sử dụng ID nội bộ để tạo mối quan hệ
                 InvitedByUserId = invitedByUserId,
                 Status = "Pending"
             };
@@ -55,3 +67,4 @@ namespace TeamTaskManagementSystem.Services
         }
     }
 }
+

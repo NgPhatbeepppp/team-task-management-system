@@ -12,7 +12,7 @@ namespace TeamTaskManagementSystem.Interfaces.ITeam
 
         Task<IEnumerable<Team>> GetTeamsByUserIdAsync(int userId);
 
-        // <<< GHI CHÚ: Đổi kiểu trả về sang Task. Service sẽ ném Exception nếu có lỗi.
+        
         Task CreateTeamAsync(Team team, int creatorUserId);
         Task UpdateTeamAsync(Team team, int updaterUserId);
         Task DeleteTeamAsync(int teamId, int userId);
@@ -23,5 +23,9 @@ namespace TeamTaskManagementSystem.Interfaces.ITeam
         Task GrantTeamLeaderAsync(int teamId, int targetUserId, int actorUserId);
 
         Task LeaveAllProjectsAsync(int teamId, int userId);
+
+        Task<Team> GetTeamByKeyCodeAsync(string keyCode);
+
+        
     }
 }

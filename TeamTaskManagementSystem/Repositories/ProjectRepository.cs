@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// TeamTaskManagementSystem/Repositories/ProjectRepository.cs
+using Microsoft.EntityFrameworkCore;
 using TeamTaskManagementSystem.Data;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Interfaces.IProject;
@@ -28,7 +29,16 @@ namespace TeamTaskManagementSystem.Repositories
 
         public async Task<Project?> GetByIdAsync(int id)
         {
-            return await _context.Projects.FindAsync(id);
+            return await _context.Projects
+                .Include(p => p.Members)
+                    .ThenInclude(pm => pm.User)
+                        .ThenInclude(u => u.UserProfile)
+                .Include(p => p.Teams)
+                    .ThenInclude(pt => pt.Team)
+                        .ThenInclude(t => t.Members)
+                            .ThenInclude(tm => tm.User)
+                                .ThenInclude(u => u.UserProfile)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task AddAsync(Project project)

@@ -18,6 +18,7 @@ namespace TeamTaskManagementSystem.Interfaces.ITeam
         void Update(Team team);
         void Delete(Team team);
         Task<bool> SaveChangesAsync();
+        Task<Team?> GetByKeyCodeAsync(string keyCode);
 
         Task<bool> IsTeamLeaderAsync(int teamId, int userId);
         Task<bool> IsMemberAsync(int teamId, int userId);

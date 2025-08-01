@@ -17,6 +17,24 @@ namespace TeamTaskManagementSystem.Services
             _projectService = projectService;
         }
 
+
+        public async Task<Team> GetTeamByKeyCodeAsync(string keyCode)
+        {
+            var team = await _teamRepository.GetByKeyCodeAsync(keyCode);
+            if (team == null)
+            {
+                throw new NotFoundException($"Không tìm thấy team với mã '{keyCode}'.");
+            }
+            return team;
+        }
+        private static string GenerateUniqueKeyCode(string prefix)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
+            var randomPart = new string(Enumerable.Repeat(chars, 4)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+            return $"{prefix}-{randomPart}";
+        }
         public async Task<IEnumerable<Team>> GetTeamsByUserIdAsync(int userId)
         {
             return await _teamRepository.GetTeamsByUserIdAsync(userId);
@@ -24,6 +42,7 @@ namespace TeamTaskManagementSystem.Services
         
         public async Task CreateTeamAsync(Team team, int creatorUserId)
         {
+            team.KeyCode = GenerateUniqueKeyCode("TEAM");
             team.CreatedByUserId = creatorUserId;
             team.CreatedAt = DateTime.UtcNow;
 

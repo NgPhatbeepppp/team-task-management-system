@@ -25,7 +25,15 @@ namespace TeamTaskManagementSystem.Repositories
         {
             await _context.TeamInvitations.AddAsync(invitation);
         }
-
+        public async Task<IEnumerable<TeamInvitation>> GetPendingInvitationsByUserIdAsync(int userId)
+        {
+            return await _context.TeamInvitations
+                .Include(i => i.Team)
+                .Include(i => i.InvitedByUser)
+                .Where(i => i.InvitedUserId == userId && i.Status == "Pending")
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync();
+        }
         public async Task<TeamInvitation?> GetByIdAsync(int invitationId)
         {
             return await _context.TeamInvitations.FindAsync(invitationId);

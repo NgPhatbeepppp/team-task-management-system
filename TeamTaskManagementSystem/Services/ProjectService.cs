@@ -1,4 +1,5 @@
 ﻿// TeamTaskManagementSystem/Services/ProjectService.cs
+using TeamTaskManagementSystem.DTOs;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Exceptions;
 using TeamTaskManagementSystem.Interfaces.IAuth_User;
@@ -16,12 +17,13 @@ namespace TeamTaskManagementSystem.Services
         // <<< GHI CHÚ: Inject thêm IUserRepository để kiểm tra người dùng có tồn tại không.
         private readonly IUserRepository _userRepository;
 
+
         public ProjectService(
             IProjectRepository projectRepository,
             ITeamRepository teamRepository,
             IProjectTeamRepository projectTeamRepository,
             IProjectMemberRepository projectMemberRepository,
-            IUserRepository userRepository) // Thêm vào constructor
+            IUserRepository userRepository) 
         {
             _projectRepository = projectRepository;
             _teamRepository = teamRepository;
@@ -29,8 +31,51 @@ namespace TeamTaskManagementSystem.Services
             _projectMemberRepository = projectMemberRepository;
             _userRepository = userRepository; // Gán repo
         }
+        public async Task<ProjectDetailsDto> GetProjectDetailsByIdAsync(int id)
+        {
+            var project = await _projectRepository.GetByIdAsync(id);
+            if (project == null)
+            {
+                throw new NotFoundException($"Không tìm thấy dự án với ID {id}.");
+            }
 
-        // ... (các phương thức khác giữ nguyên) ...
+            var projectDto = new ProjectDetailsDto
+            {
+                Id = project.Id,
+                Name = project.Name,
+                Description = project.Description,
+                CreatedAt = project.CreatedAt,
+                CreatedByUserId = project.CreatedByUserId,
+                Members = project.Members.Select(pm => new ProjectMemberDto
+                {
+                    User = new UserDto
+                    {
+                        Id = pm.User.Id,
+                        Username = pm.User.Username,
+                        FullName = pm.User.UserProfile?.FullName
+                    },
+                    RoleInProject = pm.RoleInProject
+                }).ToList(),
+
+
+                Teams = project.Teams.Select(pt => new TeamDto
+                {
+                    Id = pt.Team.Id,
+                    Name = pt.Team.Name
+                }).ToList()
+            };
+
+            return projectDto;
+        }
+        private static string GenerateUniqueKeyCode(string prefix)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
+            var randomPart = new string(Enumerable.Repeat(chars, 4) // Tạo 4 ký tự ngẫu nhiên
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+            return $"{prefix}-{randomPart}";
+        }
+
 
         // <<< GHI CHÚ: Triển khai phương thức mới với đầy đủ logic nghiệp vụ.
         public async Task AddMemberToProjectAsync(int projectId, int targetUserId, int actorUserId)
@@ -67,7 +112,7 @@ namespace TeamTaskManagementSystem.Services
             await _projectRepository.SaveChangesAsync(); // Lưu thay đổi
         }
 
-        // ... (các phương thức khác giữ nguyên) ...
+       
         public async Task<IEnumerable<Project>> GetProjectsOfUserAsync(int userId)
         {
             return await _projectRepository.GetProjectsOfUserAsync(userId);
@@ -83,10 +128,17 @@ namespace TeamTaskManagementSystem.Services
             return project;
         }
 
-        public async Task CreateProjectAsync(Project project, int creatorUserId)
+        public async Task<Project> CreateProjectAsync(ProjectCreateDto projectDto, int creatorUserId)
         {
-            project.CreatedByUserId = creatorUserId;
-            project.CreatedAt = DateTime.UtcNow;
+            // Chuyển đổi từ DTO sang Entity
+            var project = new Project
+            {
+                Name = projectDto.Name,
+                Description = projectDto.Description,
+                CreatedByUserId = creatorUserId,
+                KeyCode = GenerateUniqueKeyCode("PROJ"),
+                CreatedAt = DateTime.UtcNow
+            };
 
             project.Members.Add(new ProjectMember
             {
@@ -103,6 +155,8 @@ namespace TeamTaskManagementSystem.Services
 
             await _projectRepository.AddAsync(project);
             await _projectRepository.SaveChangesAsync();
+
+            return project; // Trả về entity Project hoàn chỉnh
         }
 
         public async Task UpdateProjectAsync(Project project, int userId)
@@ -131,6 +185,32 @@ namespace TeamTaskManagementSystem.Services
             var project = await GetByIdAsync(projectId);
 
             _projectRepository.Delete(project);
+            await _projectRepository.SaveChangesAsync();
+        }
+        public async Task RemoveMemberFromProjectAsync(int projectId, int targetUserId, int actorUserId)
+        {
+            // 1. Kiểm tra quyền: Chỉ Project Leader mới được xóa
+            if (!await _projectRepository.IsUserProjectLeaderAsync(projectId, actorUserId))
+            {
+                throw new UnauthorizedAccessException("Chỉ trưởng dự án mới có quyền xóa thành viên.");
+            }
+
+            // 2. Tìm thành viên trong dự án
+            var memberToRemove = await _projectMemberRepository.FindAsync(projectId, targetUserId);
+            if (memberToRemove == null)
+            {
+                throw new NotFoundException($"Không tìm thấy người dùng có ID {targetUserId} trong dự án này.");
+            }
+
+            // 3. Quy tắc nghiệp vụ: Không cho phép xóa chính người tạo dự án
+            var project = await _projectRepository.GetByIdAsync(projectId);
+            if (project.CreatedByUserId == targetUserId)
+            {
+                throw new InvalidOperationException("Không thể xóa người sáng lập ra dự án.");
+            }
+
+            // 4. Tiến hành xóa
+            _projectMemberRepository.Delete(memberToRemove);
             await _projectRepository.SaveChangesAsync();
         }
 

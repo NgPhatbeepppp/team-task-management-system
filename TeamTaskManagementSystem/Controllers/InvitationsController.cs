@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Interfaces.Iinvitation;
-
+using TeamTaskManagementSystem.DTOs;
 namespace TeamTaskManagementSystem.Controllers
 {
     [ApiController]
@@ -16,7 +16,12 @@ namespace TeamTaskManagementSystem.Controllers
         {
             _invitationService = invitationService;
         }
-
+    [HttpGet("pending")]
+    public async Task<ActionResult<List<InvitationDto>>> GetMyPendingInvitations()
+    {
+        var invitations = await _invitationService.GetPendingInvitationsForUserAsync(GetUserId());
+        return Ok(invitations);
+    }
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         [HttpPost("{invitationId}/accept")]
