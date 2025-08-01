@@ -1,4 +1,5 @@
 ﻿// TeamTaskManagementSystem/Services/ProjectService.cs
+using TeamTaskManagementSystem.DTOs;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Exceptions;
 using TeamTaskManagementSystem.Interfaces.IAuth_User;
@@ -91,11 +92,17 @@ namespace TeamTaskManagementSystem.Services
             return project;
         }
 
-        public async Task CreateProjectAsync(Project project, int creatorUserId)
+        public async Task<Project> CreateProjectAsync(ProjectCreateDto projectDto, int creatorUserId)
         {
-            project.CreatedByUserId = creatorUserId;
-            project.KeyCode = GenerateUniqueKeyCode("PROJ");
-            project.CreatedAt = DateTime.UtcNow;
+            // Chuyển đổi từ DTO sang Entity
+            var project = new Project
+            {
+                Name = projectDto.Name,
+                Description = projectDto.Description,
+                CreatedByUserId = creatorUserId,
+                KeyCode = GenerateUniqueKeyCode("PROJ"),
+                CreatedAt = DateTime.UtcNow
+            };
 
             project.Members.Add(new ProjectMember
             {
@@ -112,6 +119,8 @@ namespace TeamTaskManagementSystem.Services
 
             await _projectRepository.AddAsync(project);
             await _projectRepository.SaveChangesAsync();
+
+            return project; // Trả về entity Project hoàn chỉnh
         }
 
         public async Task UpdateProjectAsync(Project project, int userId)
@@ -140,6 +149,32 @@ namespace TeamTaskManagementSystem.Services
             var project = await GetByIdAsync(projectId);
 
             _projectRepository.Delete(project);
+            await _projectRepository.SaveChangesAsync();
+        }
+        public async Task RemoveMemberFromProjectAsync(int projectId, int targetUserId, int actorUserId)
+        {
+            // 1. Kiểm tra quyền: Chỉ Project Leader mới được xóa
+            if (!await _projectRepository.IsUserProjectLeaderAsync(projectId, actorUserId))
+            {
+                throw new UnauthorizedAccessException("Chỉ trưởng dự án mới có quyền xóa thành viên.");
+            }
+
+            // 2. Tìm thành viên trong dự án
+            var memberToRemove = await _projectMemberRepository.FindAsync(projectId, targetUserId);
+            if (memberToRemove == null)
+            {
+                throw new NotFoundException($"Không tìm thấy người dùng có ID {targetUserId} trong dự án này.");
+            }
+
+            // 3. Quy tắc nghiệp vụ: Không cho phép xóa chính người tạo dự án
+            var project = await _projectRepository.GetByIdAsync(projectId);
+            if (project.CreatedByUserId == targetUserId)
+            {
+                throw new InvalidOperationException("Không thể xóa người sáng lập ra dự án.");
+            }
+
+            // 4. Tiến hành xóa
+            _projectMemberRepository.Delete(memberToRemove);
             await _projectRepository.SaveChangesAsync();
         }
 

@@ -23,6 +23,20 @@ namespace TeamTaskManagementSystem.Controllers
 
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
+
+        [HttpGet("by-keycode/{keyCode}")]
+        public async Task<IActionResult> GetByKeyCode(string keyCode)
+        {
+            try
+            {
+                var team = await _teamService.GetTeamByKeyCodeAsync(keyCode);
+                return Ok(team);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        } 
         [HttpGet("mine")]
         public async Task<IActionResult> GetMyTeams()
         {

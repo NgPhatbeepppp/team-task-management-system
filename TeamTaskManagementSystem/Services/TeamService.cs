@@ -16,6 +16,17 @@ namespace TeamTaskManagementSystem.Services
             _teamRepository = teamRepository;
             _projectService = projectService;
         }
+
+
+        public async Task<Team> GetTeamByKeyCodeAsync(string keyCode)
+        {
+            var team = await _teamRepository.GetByKeyCodeAsync(keyCode);
+            if (team == null)
+            {
+                throw new NotFoundException($"Không tìm thấy team với mã '{keyCode}'.");
+            }
+            return team;
+        }
         private static string GenerateUniqueKeyCode(string prefix)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

@@ -1,9 +1,11 @@
 ﻿// TeamTaskManagementSystem/Controllers/ProjectController.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TeamTaskManagementSystem.DTOs;
 using System.Security.Claims;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Exceptions;
+
 using TeamTaskManagementSystem.Interfaces.IProject;
 
 namespace TeamTaskManagementSystem.Controllers
@@ -22,9 +24,29 @@ namespace TeamTaskManagementSystem.Controllers
 
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        // ... (các endpoint khác giữ nguyên) ...
 
-        // <<< GHI CHÚ: Thêm endpoint mới để thêm thành viên.
+
+        [HttpDelete("{projectId}/members/{targetUserId}")]
+        public async Task<IActionResult> RemoveMemberFromProject(int projectId, int targetUserId)
+        {
+            try
+            {
+                await _service.RemoveMemberFromProjectAsync(projectId, targetUserId, GetUserId());
+                return Ok(new { message = "Xóa thành viên khỏi dự án thành công." });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
         [HttpPost("{projectId}/members/{targetUserId}")]
         public async Task<IActionResult> AddMemberToProject(int projectId, int targetUserId)
         {
@@ -73,12 +95,17 @@ namespace TeamTaskManagementSystem.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Project project)
+        public async Task<IActionResult> Create(ProjectCreateDto projectDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
-                await _service.CreateProjectAsync(project, GetUserId());
-                return CreatedAtAction(nameof(GetById), new { id = project.Id }, project);
+                var createdProject = await _service.CreateProjectAsync(projectDto, GetUserId());
+                return CreatedAtAction(nameof(GetById), new { id = createdProject.Id }, createdProject);
             }
             catch (Exception ex)
             {
