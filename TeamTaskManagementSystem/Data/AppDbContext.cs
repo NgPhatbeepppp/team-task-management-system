@@ -28,6 +28,7 @@ namespace TeamTaskManagementSystem.Data
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<ActivityLog> ActivityLogs { get; set; }
         public DbSet<TeamInvitation> TeamInvitations { get; set; }
+        public DbSet<TaskAssignee> TaskAssignees { get; set; }
         #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -38,6 +39,7 @@ namespace TeamTaskManagementSystem.Data
             modelBuilder.Entity<TeamMember>().HasKey(tm => new { tm.TeamId, tm.UserId });
             modelBuilder.Entity<ProjectMember>().HasKey(pm => new { pm.ProjectId, pm.UserId });
             modelBuilder.Entity<ProjectTeam>().HasKey(pt => new { pt.ProjectId, pt.TeamId });
+            modelBuilder.Entity<TaskAssignee>().HasKey(ta => new { ta.TaskId, ta.UserId });
             #endregion
 
             #region Relationship Configurations
@@ -88,13 +90,7 @@ namespace TeamTaskManagementSystem.Data
 
             // === CÁC QUY TẮC XÓA AN TOÀN KHÁC ===
 
-            // 3. Nếu xóa User, các Task được gán cho họ sẽ trở thành "chưa được gán".
-            modelBuilder.Entity<TaskItem>()
-                .HasOne(t => t.AssignedTo)
-                .WithMany()
-                .HasForeignKey(t => t.AssignedToUserId)
-                .OnDelete(DeleteBehavior.SetNull);
-
+           
             // 4. Nếu xóa Status, các Task đang dùng nó sẽ trở thành "không có status".
             modelBuilder.Entity<TaskItem>()
                 .HasOne(t => t.Status)
