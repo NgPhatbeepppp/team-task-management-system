@@ -44,7 +44,7 @@ namespace TeamTaskManagementSystem.Entities
         public virtual User? CreatedByUser { get; set; }
         [JsonIgnore]
         public virtual TaskItem? ParentTask { get; set; }
-
+        [JsonPropertyName("taskAssignees")]
         public virtual ICollection<TaskAssignee> Assignees { get; set; } = new List<TaskAssignee>();
         [JsonIgnore]
         public virtual ICollection<TaskItem> Subtasks { get; set; } = new List<TaskItem>();

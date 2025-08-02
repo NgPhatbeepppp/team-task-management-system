@@ -18,7 +18,9 @@ namespace TeamTaskManagementSystem.Interfaces.IProject
         Task RemoveTeamFromProjectAsync(int projectId, int teamId, int userId);
 
         Task RemoveMemberFromProjectAsync(int projectId, int targetUserId, int actorUserId);
-        
+
+        Task<IEnumerable<UserDto>> SearchMembersInProjectAsync(int projectId, string query, int actorUserId);
+
         Task AddMemberToProjectAsync(int projectId, int targetUserId, int actorUserId);
     }
 }

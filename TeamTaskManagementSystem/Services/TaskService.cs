@@ -17,15 +17,43 @@ namespace TeamTaskManagementSystem.Services
             _projectRepository = projectRepo;
         }
 
-        public async Task<TaskItem?> CreateTaskAsync(TaskItem task, int userId)
+        public async Task<TaskItem?> CreateTaskAsync(TaskCreateDto taskDto, int userId)
         {
-            var project = await _projectRepository.GetByIdAsync(task.ProjectId);
+            var project = await _projectRepository.GetByIdAsync(taskDto.ProjectId);
             if (project == null)
-                return null;
+                return null; // Dự án không tồn tại
 
-            task.CreatedByUserId = userId;
-            task.CreatedAt = DateTime.UtcNow;
+            // --- Logic xác thực người dùng được giao ---
+            var projectMemberIds = new HashSet<int>(project.Members.Select(m => m.UserId));
+            foreach (var assignedUserId in taskDto.AssignedUserIds)
+            {
+                if (!projectMemberIds.Contains(assignedUserId))
+                {
+                    // Ném ra lỗi nếu cố gắng giao cho người không thuộc dự án
+                    throw new InvalidOperationException($"Người dùng với ID {assignedUserId} không phải là thành viên của dự án.");
+                }
+            }
 
+            // 1. Map từ DTO sang Entity
+            var task = new TaskItem
+            {
+                Title = taskDto.Title,
+                Description = taskDto.Description,
+                Priority = taskDto.Priority,
+                Deadline = taskDto.Deadline,
+                StatusId = taskDto.StatusId,
+                ProjectId = taskDto.ProjectId,
+                CreatedByUserId = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            // 2. Thêm những người được giao việc
+            foreach (var assigneeId in taskDto.AssignedUserIds)
+            {
+                task.Assignees.Add(new TaskAssignee { UserId = assigneeId });
+            }
+
+            // 3. Lưu vào CSDL
             await _taskRepository.AddAsync(task);
             await _taskRepository.SaveChangesAsync();
             return task;

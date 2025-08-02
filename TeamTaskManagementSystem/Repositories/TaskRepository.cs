@@ -16,13 +16,22 @@ namespace TeamTaskManagementSystem.Repositories
 
         public async Task<TaskItem?> GetByIdAsync(int id)
         {
-            return await _context.Tasks.FindAsync(id);
+            
+            return await _context.Tasks
+                .Include(t => t.Assignees)
+                    .ThenInclude(a => a.User)
+                        .ThenInclude(u => u.UserProfile)
+                .FirstOrDefaultAsync(t => t.Id == id);
         }
 
         public async Task<IEnumerable<TaskItem>> GetByProjectIdAsync(int projectId)
         {
+           
             return await _context.Tasks
                 .Where(t => t.ProjectId == projectId)
+                .Include(t => t.Assignees)
+                    .ThenInclude(a => a.User)
+                        .ThenInclude(u => u.UserProfile)
                 .ToListAsync();
         }
 

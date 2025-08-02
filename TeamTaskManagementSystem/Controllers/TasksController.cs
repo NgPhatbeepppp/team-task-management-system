@@ -23,13 +23,24 @@ namespace TeamTaskManagementSystem.Controllers
         private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         [HttpPost]
-        public async Task<IActionResult> CreateTask(TaskItem task)
+        public async Task<IActionResult> CreateTask(TaskCreateDto taskDto)
         {
-            var created = await _taskService.CreateTaskAsync(task, GetUserId());
-            if (created == null) return BadRequest("Dự án không tồn tại.");
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            return CreatedAtAction(nameof(GetTaskById), new { id = created.Id }, created);
+            try
+            {
+                var created = await _taskService.CreateTaskAsync(taskDto, GetUserId());
+                if (created == null) return BadRequest("Dự án không tồn tại.");
+
+                var result = await _taskService.GetTaskByIdAsync(created.Id);
+                return CreatedAtAction(nameof(GetTaskById), new { id = result.Id }, result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
+
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTaskById(int id)

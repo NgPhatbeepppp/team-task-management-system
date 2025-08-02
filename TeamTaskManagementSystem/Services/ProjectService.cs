@@ -111,8 +111,26 @@ namespace TeamTaskManagementSystem.Services
             await _projectMemberRepository.AddAsync(newMember);
             await _projectRepository.SaveChangesAsync(); // Lưu thay đổi
         }
+        public async Task<IEnumerable<UserDto>> SearchMembersInProjectAsync(int projectId, string query, int actorUserId)
+        {
+            // Kiểm tra xem người dùng có phải là thành viên của dự án không
+            var isMember = await _projectMemberRepository.FindAsync(projectId, actorUserId);
+            if (isMember == null)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền xem danh sách thành viên của dự án này.");
+            }
 
-       
+            var users = await _projectRepository.SearchMembersInProjectAsync(projectId, query);
+
+            // Chuyển đổi sang DTO để trả về cho Frontend
+            return users.Select(u => new UserDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                FullName = u.UserProfile?.FullName
+            });
+        }
+
         public async Task<IEnumerable<Project>> GetProjectsOfUserAsync(int userId)
         {
             return await _projectRepository.GetProjectsOfUserAsync(userId);

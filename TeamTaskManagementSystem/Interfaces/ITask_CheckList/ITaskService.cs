@@ -1,14 +1,15 @@
-﻿using TeamTaskManagementSystem.DTOs;
-using TeamTaskManagementSystem.Entities;
+﻿using TeamTaskManagementSystem.Entities;
+
+using TeamTaskManagementSystem.DTOs;
 
 namespace TeamTaskManagementSystem.Interfaces.ITask_CheckList
 {
     public interface ITaskService
     {
-        Task<TaskItem?> CreateTaskAsync(TaskItem task, int userId);
+        Task<TaskItem?> CreateTaskAsync(TaskCreateDto taskDto, int userId);
         Task<TaskItem?> GetTaskByIdAsync(int id);
         Task<IEnumerable<TaskItem>> GetTasksByProjectAsync(int projectId);
-        Task<bool> UpdateTaskAsync(TaskUpdateDto taskDto, int userId);
+         Task<bool> UpdateTaskAsync(TaskUpdateDto taskDto, int userId);
         Task<bool> DeleteTaskAsync(int id, int userId);
         Task<bool> UpdateTaskStatusAsync(int taskId, int newStatusId, int userId);
     }
