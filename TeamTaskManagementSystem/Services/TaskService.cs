@@ -69,9 +69,9 @@ namespace TeamTaskManagementSystem.Services
             return await _taskRepository.GetByProjectIdAsync(projectId);
         }
 
-        public async Task<bool> UpdateTaskAsync(TaskUpdateDto taskDto, int userId)
+        public async Task<bool> UpdateTaskAsync(int taskId, TaskUpdateDto taskDto, int userId)
         {
-            var existingTask = await _taskRepository.GetByIdAsync(taskDto.Id);
+            var existingTask = await _taskRepository.GetByIdAsync(taskId);
             if (existingTask == null)
             {
                 throw new NotFoundException("Công việc không tồn tại.");
@@ -83,39 +83,60 @@ namespace TeamTaskManagementSystem.Services
                 throw new UnauthorizedAccessException("Bạn không có quyền chỉnh sửa công việc trong dự án này.");
             }
 
-            // --- Logic xác thực người dùng được giao ---
-            var projectMemberIds = new HashSet<int>(project.Members.Select(m => m.UserId));
-            foreach (var assignedUserId in taskDto.AssignedUserIds)
+            // --- Cập nhật các trường một cách có điều kiện ---
+
+            // Chỉ cập nhật nếu giá trị được cung cấp trong DTO (không phải null)
+            if (taskDto.Title != null)
             {
-                if (!projectMemberIds.Contains(assignedUserId))
+                existingTask.Title = taskDto.Title;
+            }
+            if (taskDto.Description != null)
+            {
+                existingTask.Description = taskDto.Description;
+            }
+            if (taskDto.Priority != null)
+            {
+                existingTask.Priority = taskDto.Priority;
+            }
+            if (taskDto.Deadline.HasValue)
+            {
+                existingTask.Deadline = taskDto.Deadline;
+            }
+            if (taskDto.StatusId.HasValue)
+            {
+                existingTask.StatusId = taskDto.StatusId;
+            }
+
+            // --- Logic cập nhật danh sách người được giao (AN TOÀN HƠN) ---
+            // Chỉ thực hiện logic này NẾU FE có gửi lên trường 'assignedUserIds'
+            if (taskDto.AssignedUserIds != null)
+            {
+                // Kiểm tra xem tất cả user được gán có thuộc project không
+                var projectMemberIds = new HashSet<int>(project.Members.Select(m => m.UserId));
+                foreach (var assignedUserId in taskDto.AssignedUserIds)
                 {
-                    throw new InvalidOperationException($"Người dùng với ID {assignedUserId} không phải là thành viên của dự án.");
+                    if (!projectMemberIds.Contains(assignedUserId))
+                    {
+                        throw new InvalidOperationException($"Người dùng với ID {assignedUserId} không phải là thành viên của dự án.");
+                    }
                 }
-            }
 
-            // --- Cập nhật thông tin cơ bản của Task ---
-            existingTask.Title = taskDto.Title;
-            existingTask.Description = taskDto.Description;
-            existingTask.Priority = taskDto.Priority;
-            existingTask.Deadline = taskDto.Deadline;
-            existingTask.StatusId = taskDto.StatusId;
+                var newAssigneeIds = new HashSet<int>(taskDto.AssignedUserIds);
+                var currentAssigneeIds = new HashSet<int>(existingTask.Assignees.Select(a => a.UserId));
 
-            // --- Logic cập nhật danh sách người được giao ---
-            var newAssigneeIds = new HashSet<int>(taskDto.AssignedUserIds);
-            var currentAssigneeIds = new HashSet<int>(existingTask.Assignees.Select(a => a.UserId));
+                // Xóa những người không còn được giao
+                var assigneesToRemove = existingTask.Assignees.Where(a => !newAssigneeIds.Contains(a.UserId)).ToList();
+                foreach (var assignee in assigneesToRemove)
+                {
+                    existingTask.Assignees.Remove(assignee);
+                }
 
-            // Xóa những người không còn được giao
-            var assigneesToRemove = existingTask.Assignees.Where(a => !newAssigneeIds.Contains(a.UserId)).ToList();
-            foreach (var assignee in assigneesToRemove)
-            {
-                existingTask.Assignees.Remove(assignee);
-            }
-
-            // Thêm những người mới được giao
-            var userIdsToAdd = newAssigneeIds.Where(id => !currentAssigneeIds.Contains(id)).ToList();
-            foreach (var userIdToAdd in userIdsToAdd)
-            {
-                existingTask.Assignees.Add(new TaskAssignee { TaskId = existingTask.Id, UserId = userIdToAdd });
+                // Thêm những người mới được giao
+                var userIdsToAdd = newAssigneeIds.Where(id => !currentAssigneeIds.Contains(id)).ToList();
+                foreach (var userIdToAdd in userIdsToAdd)
+                {
+                    existingTask.Assignees.Add(new TaskAssignee { TaskId = existingTask.Id, UserId = userIdToAdd });
+                }
             }
 
             await _taskRepository.UpdateAsync(existingTask);
@@ -150,6 +171,28 @@ namespace TeamTaskManagementSystem.Services
 
             // Cập nhật chỉ statusId
             existingTask.StatusId = newStatusId;
+
+            await _taskRepository.UpdateAsync(existingTask);
+            await _taskRepository.SaveChangesAsync();
+            return true;
+        }
+        public async Task<bool> UpdateTaskPriorityAsync(int taskId, string newPriority, int userId)
+        {
+            var existingTask = await _taskRepository.GetByIdAsync(taskId);
+            if (existingTask == null)
+            {
+                return false; // Task không tồn tại
+            }
+
+            // Logic nghiệp vụ: Kiểm tra xem người dùng có phải là thành viên của dự án chứa task này không
+            var project = await _projectRepository.GetByIdAsync(existingTask.ProjectId);
+            if (project == null || !project.Members.Any(m => m.UserId == userId))
+            {
+                return false; // Không có quyền
+            }
+
+            // Cập nhật chỉ trường Priority
+            existingTask.Priority = newPriority;
 
             await _taskRepository.UpdateAsync(existingTask);
             await _taskRepository.SaveChangesAsync();

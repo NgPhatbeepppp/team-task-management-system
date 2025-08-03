@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using TeamTaskManagementSystem.Helpers;
 
 namespace TeamTaskManagementSystem.DTOs
 {
@@ -12,6 +14,8 @@ namespace TeamTaskManagementSystem.DTOs
         public string Title { get; set; }
 
         public string? Description { get; set; }
+
+        [JsonConverter(typeof(NullableDateTimeConverter))]
         public DateTime? Deadline { get; set; }
         public string Priority { get; set; } = "Medium";
         public int? StatusId { get; set; }
