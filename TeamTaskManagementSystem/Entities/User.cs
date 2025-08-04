@@ -22,7 +22,8 @@ namespace TeamTaskManagementSystem.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public bool IsActive { get; set; } = true;
-
+        public string? PasswordResetToken { get; set; }
+        public DateTime? ResetTokenExpires { get; set; }
         // --- BỔ SUNG CÁC THUỘC TÍNH ĐIỀU HƯỚNG ---
         public virtual UserProfile UserProfile { get; set; } // Quan hệ 1-1 (One-to-One relationship)
         public virtual ICollection<TeamMember> Teams { get; set; } = new List<TeamMember>();

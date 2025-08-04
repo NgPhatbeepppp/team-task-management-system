@@ -34,8 +34,14 @@ namespace TeamTaskManagementSystem.Repositories
         {
             return await _context.UserProfiles.AnyAsync(p => p.PhoneNumber == phoneNumber);
         }
-
-
+        public async Task<User?> GetUserByEmailAsync(string email)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
+        public async Task<User?> GetUserByPasswordResetTokenAsync(string token)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == token);
+        }
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _context.Users.ToListAsync();

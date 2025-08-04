@@ -6,6 +6,8 @@ using System.Text;
 using TeamTaskManagementSystem.Entities;
 using TeamTaskManagementSystem.Interfaces.IAuth_User;
 using TeamTaskManagementSystem.ViewModels;
+using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore;
 
 namespace TeamTaskManagementSystem.Services
 {
@@ -21,7 +23,56 @@ namespace TeamTaskManagementSystem.Services
             _config = config;
             _hasher = new PasswordHasher<User>();
         }
+        public async Task<bool> ForgotPasswordAsync(string email)
+        {
+            var user = await _userRepository.GetUserByEmailAsync(email);
+            if (user == null)
+            {
+                // Trả về true để không tiết lộ email nào tồn tại trong hệ thống
+                return true;
+            }
 
+            // Tạo token ngẫu nhiên
+            var resetToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
+
+            user.PasswordResetToken = resetToken;
+            user.ResetTokenExpires = DateTime.UtcNow.AddHours(1); // Token hết hạn sau 1 giờ
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+
+            // =================================================================
+            // TODO: Implement email sending logic here
+            // Gửi email cho người dùng với `resetToken`.
+            // Ví dụ: var resetLink = $"https://your-frontend.com/reset-password?token={resetToken}";
+            //        await _emailService.SendPasswordResetEmail(user.Email, resetLink);
+            // =================================================================
+
+            return true;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+        {
+            
+            var user = await _userRepository.GetUserByPasswordResetTokenAsync(token);
+
+            if (user == null || user.ResetTokenExpires < DateTime.UtcNow)
+            {
+                return false; // Token không hợp lệ hoặc đã hết hạn
+            }
+
+            // Cập nhật mật khẩu mới
+            user.PasswordHash = _hasher.HashPassword(user, newPassword);
+
+            // Xóa token sau khi sử dụng
+            user.PasswordResetToken = null;
+            user.ResetTokenExpires = null;
+
+            _userRepository.Update(user);
+            await _userRepository.SaveChangesAsync();
+
+            return true;
+        }
         public async Task<RegisterResult> RegisterAsync(AuthRegisterRequest request)
         {
             if (await _userRepository.IsUsernameTakenAsync(request.Username))

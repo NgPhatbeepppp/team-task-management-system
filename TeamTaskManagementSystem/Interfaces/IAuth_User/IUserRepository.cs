@@ -16,9 +16,9 @@ namespace TeamTaskManagementSystem.Interfaces.IAuth_User
 
         Task<bool> IsUsernameTakenAsync(string username);
         Task<bool> IsEmailTakenAsync(string email);
-        Task<bool> IsPhoneNumberTakenAsync(string phoneNumber); 
-
-
+        Task<bool> IsPhoneNumberTakenAsync(string phoneNumber);
+        Task<User?> GetUserByEmailAsync(string email);
+        Task<User?> GetUserByPasswordResetTokenAsync(string token);
         // Mở rộng cho xác thực
         Task<bool> IsUsernameOrEmailTakenAsync(string username, string email);
         Task AddUserAsync(User user);

@@ -190,6 +190,7 @@ namespace TeamTaskManagementSystem.Services
             {
                 Id = task.Id,
                 Title = task.Title,
+                StartDate = task.StartDate,
                 Deadline = task.Deadline,
                 Priority = task.Priority,
                 StatusId = task.StatusId,
@@ -206,7 +207,7 @@ namespace TeamTaskManagementSystem.Services
             var existingTask = await _taskRepository.GetByIdAsync(taskId);
             if (existingTask == null)
             {
-                return false; // Task không tồn tại
+                return false;
             }
 
             // Logic nghiệp vụ: Kiểm tra xem người dùng có phải là thành viên của dự án chứa task này không

@@ -47,7 +47,31 @@ namespace TeamTaskManagementSystem.Controllers
 
         }
 
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
+        {
+            if (!ModelState.IsValid) return BadRequest();
 
+            await _authService.ForgotPasswordAsync(request.Email);
+
+            // Luôn trả về thông báo thành công để bảo mật
+            return Ok(new { message = "Nếu email của bạn tồn tại trong hệ thống, chúng tôi đã gửi một liên kết để đặt lại mật khẩu." });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
+        {
+            if (!ModelState.IsValid) return BadRequest();
+
+            var result = await _authService.ResetPasswordAsync(request.Token, request.Password);
+
+            if (!result)
+            {
+                return BadRequest(new { message = "Token không hợp lệ hoặc đã hết hạn." });
+            }
+
+            return Ok(new { message = "Mật khẩu của bạn đã được đặt lại thành công." });
+        }
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] AuthLoginRequest request)
         {
