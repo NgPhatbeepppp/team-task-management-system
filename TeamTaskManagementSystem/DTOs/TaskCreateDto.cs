@@ -22,8 +22,7 @@ namespace TeamTaskManagementSystem.DTOs
 
         [Required]
         public int ProjectId { get; set; }
-
-        // Danh sách ID người dùng được giao
+                
         public List<int> AssignedUserIds { get; set; } = new List<int>();
     }
 }
