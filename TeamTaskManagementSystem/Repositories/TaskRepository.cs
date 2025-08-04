@@ -23,7 +23,13 @@ namespace TeamTaskManagementSystem.Repositories
                         .ThenInclude(u => u.UserProfile)
                 .FirstOrDefaultAsync(t => t.Id == id);
         }
-
+        public async Task<IEnumerable<TaskItem>> GetByUserIdAsync(int userId)
+        {
+            return await _context.Tasks
+                .Include(t => t.Project) // Lấy thông tin dự án liên quan
+                .Where(t => t.Assignees.Any(a => a.UserId == userId))
+                .ToListAsync();
+        }
         public async Task<IEnumerable<TaskItem>> GetByProjectIdAsync(int projectId)
         {
            

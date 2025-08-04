@@ -41,6 +41,7 @@ namespace TeamTaskManagementSystem.Services
                 Description = taskDto.Description,
                 Priority = taskDto.Priority,
                 Deadline = taskDto.Deadline,
+                StartDate = taskDto.StartDate,
                 StatusId = taskDto.StatusId,
                 ProjectId = taskDto.ProjectId,
                 CreatedByUserId = userId,
@@ -97,6 +98,10 @@ namespace TeamTaskManagementSystem.Services
             if (taskDto.Priority != null)
             {
                 existingTask.Priority = taskDto.Priority;
+            }
+            if (taskDto.StartDate.HasValue)
+            {
+                existingTask.StartDate = taskDto.StartDate; 
             }
             if (taskDto.Deadline.HasValue)
             {
@@ -175,6 +180,26 @@ namespace TeamTaskManagementSystem.Services
             await _taskRepository.UpdateAsync(existingTask);
             await _taskRepository.SaveChangesAsync();
             return true;
+        }
+        public async Task<IEnumerable<TaskForUserDto>> GetTasksForUserAsync(int userId)
+        {
+            var tasksFromRepo = await _taskRepository.GetByUserIdAsync(userId);
+
+            // Ánh xạ từ danh sách Entity sang danh sách DTO
+            return tasksFromRepo.Select(task => new TaskForUserDto
+            {
+                Id = task.Id,
+                Title = task.Title,
+                Deadline = task.Deadline,
+                Priority = task.Priority,
+                StatusId = task.StatusId,
+                Project = new ProjectSummaryDto
+                {
+                    Id = task.Project.Id,
+                    Name = task.Project.Name,
+                    KeyCode = task.Project.KeyCode
+                }
+            }).ToList();
         }
         public async Task<bool> UpdateTaskPriorityAsync(int taskId, string newPriority, int userId)
         {

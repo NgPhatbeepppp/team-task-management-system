@@ -16,13 +16,16 @@ namespace TeamTaskManagementSystem.DTOs
         public string? Description { get; set; }
 
         [JsonConverter(typeof(NullableDateTimeConverter))]
+        public DateTime? StartDate { get; set; } // <--- THÊM DÒNG NÀY
+
+        [JsonConverter(typeof(NullableDateTimeConverter))]
         public DateTime? Deadline { get; set; }
         public string Priority { get; set; } = "Medium";
         public int? StatusId { get; set; }
 
         [Required]
         public int ProjectId { get; set; }
-                
+
         public List<int> AssignedUserIds { get; set; } = new List<int>();
     }
 }

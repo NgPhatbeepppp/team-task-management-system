@@ -1,4 +1,5 @@
-﻿using System;
+﻿// TeamTaskManagementSystem/DTOs/TaskUpdateDto.cs
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -8,11 +9,15 @@ namespace TeamTaskManagementSystem.DTOs
 {
     public class TaskUpdateDto
     {
-      
+
         [MaxLength(255)]
         public string Title { get; set; }
 
         public string? Description { get; set; }
+
+        [JsonConverter(typeof(NullableDateTimeConverter))]
+        public DateTime? StartDate { get; set; }
+
         [JsonConverter(typeof(NullableDateTimeConverter))]
         public DateTime? Deadline { get; set; }
         public string Priority { get; set; } = "Medium";

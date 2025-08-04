@@ -11,6 +11,7 @@ namespace TeamTaskManagementSystem.Interfaces.ITask_CheckList
         Task<IEnumerable<TaskItem>> GetTasksByProjectAsync(int projectId);
         Task<bool> UpdateTaskAsync(int taskId, TaskUpdateDto taskDto, int userId);
         Task<bool> DeleteTaskAsync(int id, int userId);
+        Task<IEnumerable<TaskForUserDto>> GetTasksForUserAsync(int userId);
         Task<bool> UpdateTaskStatusAsync(int taskId, int newStatusId, int userId);
         Task<bool> UpdateTaskPriorityAsync(int taskId, string newPriority, int userId);
     }

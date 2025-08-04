@@ -108,6 +108,12 @@ namespace TeamTaskManagementSystem.Controllers
 
             return NoContent();
         }
+        [HttpGet("mine")] 
+        public async Task<IActionResult> GetMyTasks()
+        {
+            var tasks = await _taskService.GetTasksForUserAsync(GetUserId());
+            return Ok(tasks);
+        }
         [HttpPut("{taskId}/status")]
         public async Task<IActionResult> UpdateTaskStatus(int taskId, [FromBody] UpdateTaskStatusDto dto)
         {
