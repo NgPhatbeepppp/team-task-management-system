@@ -11,5 +11,9 @@ namespace TeamTaskManagementSystem.Interfaces.IProject
         void Delete(Project project);
         Task<bool> SaveChangesAsync();
         Task<bool> IsUserProjectLeaderAsync(int projectId, int userId);
+
+        Task<IEnumerable<User>> SearchMembersInProjectAsync(int projectId, string query);
+
+
     }
 }

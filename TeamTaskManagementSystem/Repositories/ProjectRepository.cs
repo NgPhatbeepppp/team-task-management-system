@@ -40,7 +40,33 @@ namespace TeamTaskManagementSystem.Repositories
                                 .ThenInclude(u => u.UserProfile)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
+        // TeamTaskManagementSystem/Repositories/ProjectRepository.cs
 
+        public async Task<IEnumerable<User>> SearchMembersInProjectAsync(int projectId, string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return await _context.ProjectMembers
+                    .Where(pm => pm.ProjectId == projectId)
+                    .Include(pm => pm.User)
+                        .ThenInclude(u => u.UserProfile)
+                    .Select(pm => pm.User!) 
+                    .Take(10)
+                    .ToListAsync();
+            }
+
+            var lowerCaseQuery = query.ToLower();
+
+            return await _context.ProjectMembers
+                .Include(pm => pm.User)
+                    .ThenInclude(u => u.UserProfile)
+                .Where(pm => pm.ProjectId == projectId &&
+                             (pm.User.Username.ToLower().Contains(lowerCaseQuery) ||
+                              (pm.User.UserProfile != null && pm.User.UserProfile.FullName.ToLower().Contains(lowerCaseQuery))))
+                .Select(pm => pm.User!) 
+                .Take(10)
+                .ToListAsync();
+        }
         public async Task AddAsync(Project project)
         {
             await _context.Projects.AddAsync(project);

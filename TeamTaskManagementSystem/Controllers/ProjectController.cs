@@ -112,7 +112,19 @@ namespace TeamTaskManagementSystem.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-
+        [HttpGet("{projectId}/members/search")]
+        public async Task<IActionResult> SearchMembers(int projectId, [FromQuery] string q)
+        {
+            try
+            {
+                var users = await _service.SearchMembersInProjectAsync(projectId, q, GetUserId());
+                return Ok(users);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
